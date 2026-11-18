@@ -1,0 +1,18 @@
+.browser-gate { position:fixed; inset:0; z-index:110; overflow:auto; display:grid; place-items:center; padding:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left)); background:#e5eee8; color:#263d30; font:16px/1.55 system-ui,sans-serif; }
+.browser-gate * { box-sizing:border-box; }
+.browser-gate-card { width:min(100%,440px); background:#fffdf7; border:1px solid #d5dfd4; border-radius:20px; padding:24px; box-shadow:0 12px 36px #2942391a; }
+.browser-gate-logo { display:block; width:140px; height:auto; margin:0 auto 20px; }
+.browser-gate-eyebrow { margin:0 0 8px; color:#667d68; font-size:11px; font-weight:700; letter-spacing:.12em; }
+.browser-gate h1 { margin:0 0 12px; font-size:clamp(24px,6vw,30px); line-height:1.2; }
+.browser-gate-description { margin:0; }
+.browser-gate-steps { padding-left:22px; margin:16px 0; }
+.browser-gate-steps li + li { margin-top:8px; }
+.browser-gate-open, .browser-gate-copy button { min-height:48px; border:0; border-radius:9px; background:#31513d; color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+.browser-gate-open { display:block; padding:12px; margin-bottom:16px; text-align:center; text-decoration:none; }
+.browser-gate-open[hidden] { display:none; }
+.browser-gate label { display:block; margin:0 0 6px; font-size:13px; font-weight:700; }
+.browser-gate-copy { display:flex; gap:8px; }
+.browser-gate-copy input { flex:1; min-width:0; padding:10px; border:1px solid #9bab9d; border-radius:9px; color:#263d30; background:#fff; font:inherit; }
+.browser-gate-copy button { padding:10px 14px; white-space:nowrap; }
+.browser-gate-feedback { min-height:1.5em; margin:8px 0 0; color:#31513d; font-size:13px; }
+.browser-gate :focus-visible { outline:3px solid #a2773c; outline-offset:3px; }

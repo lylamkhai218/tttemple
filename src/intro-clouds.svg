@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 900" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="cloud" x2="0" y2="1"><stop stop-color="#ffffff" stop-opacity=".95"/><stop offset="1" stop-color="#dce9e2" stop-opacity=".82"/></linearGradient>
+  </defs>
+  <g fill="url(#cloud)" stroke="#d5e3db" stroke-width="2">
+    <path d="M-35 194 C-12 160 27 164 44 176 C52 130 99 113 130 145 C151 99 213 101 232 152 C264 126 313 142 316 182 C352 171 386 191 391 218 L-35 218Z"/>
+    <path d="M126 378 C145 351 177 347 199 357 C208 319 256 303 284 337 C308 292 365 308 374 348 C405 322 452 340 454 373 C481 365 508 378 526 402 L126 402Z"/>
+    <path d="M-20 662 C0 628 32 626 55 637 C66 596 111 581 140 613 C166 573 220 579 233 623 C262 600 307 615 314 648 C350 639 381 658 388 680 L-20 680Z"/>
+    <path d="M153 820 C171 792 211 786 231 800 C242 761 287 752 315 779 C337 745 390 750 402 788 C434 768 477 785 482 815 C503 812 521 823 532 842 L153 842Z"/>
+  </g>
+  <g fill="none" stroke="#c6d8d0" stroke-opacity=".55" stroke-width="2" stroke-linecap="round">
+    <path d="M25 225h221 M165 409h226 M12 688h225 M199 849h214"/>
+  </g>
+</svg>

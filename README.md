@@ -2,13 +2,17 @@
 
 Nguyên mẫu một người chơi của game đi chùa nội bộ. Đây là bước đầu để kiểm tra bố cục, điều khiển, cảm giác tương tác và hiệu năng trên điện thoại; chưa có tài khoản, multiplayer, backend hay cơ sở dữ liệu.
 
+Bản thử: https://tttemple-vite-test.khaill22t89.workers.dev/ — chỉ cho kết nối được Cloudflare nhận diện có IP tại Việt Nam. Lọc theo IP không thay thế đăng nhập và có thể nhận diện sai khi dùng VPN hoặc mạng di động. Số hạt chỉ lưu cục bộ trên từng trình duyệt.
+
+Nếu mở trong Zalo, Facebook hoặc một số trình duyệt trong ứng dụng được nhận diện, game hướng dẫn mở bằng Safari hoặc trình duyệt của máy và cho phép sao chép liên kết. Android có thêm nút thử mở trình duyệt; khả năng hoạt động tùy ứng dụng. Trên iPhone cần dùng menu ứng dụng hoặc sao chép liên kết, vì trang web không thể đảm bảo tự mở Safari. Một số trình duyệt nhúng có thể không được nhận diện.
+
 ## Chạy trên máy
 
 Cần Node.js 20.19+ hoặc 22.12+ và pnpm. Chạy `pnpm install`, sau đó `pnpm dev` và mở địa chỉ Vite hiển thị. `pnpm build` tạo bản build.
 
 Chạy `pnpm test` để kiểm tra hợp đồng event. Hợp đồng này chưa gửi hoặc lưu dữ liệu, chưa phải hệ thống theo dõi hay log hoàn chỉnh.
 
-Di chuyển bằng WASD/phím mũi tên hoặc nút điều hướng trên màn hình; kéo để xoay góc nhìn. Đến gần một điểm nghi lễ và chọn nút tương ứng. Chuỗi hạt lưu trên trình duyệt hiện tại, không đồng bộ và có thể mất nếu xóa dữ liệu trình duyệt.
+Di chuyển bằng WASD/phím mũi tên trên máy tính hoặc kéo cần điều khiển tròn trên điện thoại; kéo nền cảnh để xoay góc nhìn. Nhả cần để dừng. Đến gần một điểm nghi lễ và chọn nút tương ứng. Chuỗi hạt lưu trên trình duyệt hiện tại, không đồng bộ và có thể mất nếu xóa dữ liệu trình duyệt.
 
 Hai sân TTPC và T&T Vina nằm hai bên sân chùa chung. Biển khu dùng logo được cung cấp; bản thử hiện chưa có tài khoản hay người chơi khác.
 

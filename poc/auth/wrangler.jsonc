@@ -1,0 +1,9 @@
+{
+  // Deploy only as a separate, temporary Worker. No route or cron is configured.
+  "name": "tttemple-auth-poc",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-18",
+  "workers_dev": false,
+  "triggers": { "crons": [] },
+  "observability": { "enabled": true }
+}

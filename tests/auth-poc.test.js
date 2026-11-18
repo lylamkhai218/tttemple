@@ -1,6 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {runSample, ITERATIONS} from '../poc/auth/pbkdf2-benchmark.mjs';
+import worker from '../poc/auth/worker.mjs';
+import scryptWorker from '../poc/auth/worker-scrypt.mjs';
+import { runScryptSample, SCRYPT_OPTIONS } from '../poc/auth/scrypt-benchmark.mjs';
+
+test('benchmark worker exposes no HTTP benchmark endpoint', async () => {
+  const response = await worker.fetch(new Request('https://example.test/'));
+  assert.equal(response.status, 404);
+  assert.equal((await scryptWorker.fetch()).status, 404);
+});
+
+test('scrypt POC uses the documented parameters and runs with synthetic data', () => {
+  assert.deepEqual(SCRYPT_OPTIONS, { N: 32768, r: 8, p: 3, maxmem: 64 * 1024 * 1024 });
+  assert.ok(runScryptSample().wall_ms >= 0);
+});
 
 test('synthetic benchmark uses the documented algorithm and returns only timing', async () => {
   const calls=[];let tick=0;

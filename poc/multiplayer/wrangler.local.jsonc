@@ -1,0 +1,10 @@
+{
+  // Local POC only. Do not deploy: there is no authentication or abuse protection.
+  "name": "tttemple-multiplayer-local-only",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-18",
+  "workers_dev": false,
+  "preview_urls": false,
+  "durable_objects": { "bindings": [{ "name": "ROOM", "class_name": "TestRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TestRoom"] }]
+}

@@ -1,0 +1,10 @@
+{
+  // Local simulation only. This placeholder is not a real D1 database ID.
+  "name": "tttemple-session-local-only",
+  "main": "worker-d1-local.mjs",
+  "compatibility_date": "2026-11-18",
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": { "crons": [] },
+  "d1_databases": [{ "binding": "DB", "database_name": "tttemple-local-synthetic", "database_id": "00000000-0000-0000-0000-000000000000" }]
+}
