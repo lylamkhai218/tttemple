@@ -5,7 +5,7 @@ import {
   verifyRegistrationResponse,
 } from '@simplewebauthn/server';
 import { createPocState } from './poc-state.mjs';
-import { readBoundedJson } from './request-json.mjs';
+import { hasJsonContentType, readBoundedJson } from './request-json.mjs';
 
 const RP_ID = 'localhost';
 const RP_ORIGIN = 'http://localhost:5178';
@@ -65,7 +65,7 @@ async function handleRequest(request, state) {
 
   if (request.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
   if (!hasExpectedOrigin(request)) return json({ ok: false, error: 'origin_rejected' }, 403);
-  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
+  if (!hasJsonContentType(request)) {
     return json({ ok: false, error: 'invalid_request' }, 400);
   }
   const body = await readBoundedJson(request);

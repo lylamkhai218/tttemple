@@ -1,5 +1,11 @@
 export const MAX_BODY_BYTES = 64 * 1024;
 
+export function hasJsonContentType(request) {
+  const contentType = request.headers.get('content-type');
+  if (!contentType) return false;
+  return contentType.split(';', 1)[0].trim().toLowerCase() === 'application/json';
+}
+
 export async function readBoundedJson(request, { maxBytes = MAX_BODY_BYTES } = {}) {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) throw new TypeError('Invalid JSON body limit');
   const contentLength = request.headers.get('content-length');

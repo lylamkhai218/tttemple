@@ -1,8 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { MAX_BODY_BYTES, readBoundedJson } from '../request-json.mjs';
+import { hasJsonContentType, MAX_BODY_BYTES, readBoundedJson } from '../request-json.mjs';
 
 const origin = 'http://localhost:5178';
+
+test('accepts application/json parameters but rejects lookalike media types', () => {
+  const request = (contentType) => new Request('http://localhost:5178/api/test', {
+    method: 'POST',
+    headers: { 'content-type': contentType },
+    body: '{}',
+  });
+
+  assert.equal(hasJsonContentType(request('application/json; charset=utf-8')), true);
+  assert.equal(hasJsonContentType(request('Application/JSON')), true);
+  assert.equal(hasJsonContentType(request('application/jsonp')), false);
+  assert.equal(hasJsonContentType(request('application/json-seq')), false);
+});
 
 test('rejects a streamed JSON body over 64 KiB without Content-Length', async () => {
   let cancelled = false;
