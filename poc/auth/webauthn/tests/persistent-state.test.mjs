@@ -56,6 +56,7 @@ test('transactional storage preserves synthetic auth state across handler recrea
   state = createPocState({ storage });
   assert.equal(await state.isLocked(), true);
   assert.equal(await state.validateSession(token), false);
+  assert.equal(await state.issueSession(), null);
 });
 
 test('concurrent challenge consumption succeeds once and session replacement is singular', async () => {

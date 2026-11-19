@@ -42,6 +42,7 @@ test('five failed authentications are limited and locking revokes the session', 
   await state.lockAccount();
   assert.equal(await state.canAuthenticate(), false);
   assert.equal(await state.validateSession(token), false);
+  assert.equal(await state.issueSession(), null);
 });
 
 test('Worker endpoints bind ceremonies to the local origin and consume invalid challenges once', async () => {

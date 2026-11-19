@@ -185,6 +185,7 @@ async function handleRequest(request, state) {
       }
       await state.clearAuthenticationFailures();
       const sessionToken = await state.issueSession();
+      if (!sessionToken) return json({ ok: false, error: 'account_locked' }, 429);
       console.log(JSON.stringify({ event: 'synthetic_passkey_authentication', outcome: 'verified', user_verified: true }));
       return json({ ok: true, sessionToken, account: ACCOUNT_ID, expiresInMs: 15 * 60 * 1000 });
     } catch (error) {

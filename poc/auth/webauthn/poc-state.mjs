@@ -166,10 +166,12 @@ export function createPocState({ cryptoApi = globalThis.crypto, now = () => Date
     async issueSession() {
       const token = toBase64Url(cryptoApi.getRandomValues(new Uint8Array(32)));
       const tokenHash = await digestToken(cryptoApi, token);
-      await update((state) => {
+      const issued = await update((state) => {
+        if (state.locked) return false;
         state.activeSession = { tokenHash, expiresAt: now() + SESSION_TTL_MS };
+        return true;
       });
-      return token;
+      return issued ? token : null;
     },
     async validateSession(token) {
       if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/u.test(token)) return false;
