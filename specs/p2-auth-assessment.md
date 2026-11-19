@@ -39,6 +39,8 @@ Cloudflare Access/IdP là hướng thay thế tốt nếu người dùng có ema
 3. Đo CPU, wall, lỗi runtime và quota bằng request HTTP hoặc trigger có telemetry truy xuất được trên Cloudflare; lần thử 19/11 không trả event nên không có số đo. Báo nhiều mẫu và cấu hình. Worker thử nghiệm phải được đưa về idle sau phép đo.
 4. P2 chỉ đạt khi có review bảo mật, bằng chứng thực thi Cloudflare và phương án vận hành/khôi phục. Khi chưa có, không tạo tài khoản thật hoặc nối vào P4/P5.
 
+Checklist chạy authenticator cùng máy và cổng HTTPS hostname cho iPhone nằm ở `specs/p2-webauthn-device-test.md`. Test thiết bị chưa được thực hiện.
+
 ## Nguồn kỹ thuật
 
 - [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/)

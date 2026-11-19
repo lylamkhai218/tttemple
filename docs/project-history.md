@@ -380,3 +380,11 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - Test helper/state cục bộ đạt 9/9; syntax check và `git diff --check` đạt. GitHub Actions run [44553204486](https://github.com/lylamkhai218/tttemple/actions/runs/44553204486), commit `469161b`, đạt 61/61 test, build, Wrangler dry-run và smoke SQLite Durable Object local.
 - Không deploy hoặc đổi cấu hình Cloudflare. P2 còn cần authenticator/iOS thật, telemetry CPU trên Cloudflare, phương án recovery và review bảo mật.
 - Nguồn: `poc/auth/webauthn/request-json.mjs`, `worker.mjs`, `worker-cloudflare.mjs`, `tests/request-body.test.mjs`; log CI run [44553204486](https://github.com/lylamkhai218/tttemple/actions/runs/44553204486).
+
+## 19/11/2026 - P2 chuẩn bị checklist authenticator thiết bị
+
+- Đối chiếu cấu hình POC và hướng dẫn phát hiện RP ID/origin khóa ở `localhost` cùng Vite bind `localhost`. Passkey có thể thử trên authenticator của chính máy đang chạy server; iPhone truy cập `localhost` sẽ trỏ về iPhone, không phải Windows host.
+- Thêm `specs/p2-webauthn-device-test.md` với bước đăng ký, restart giữ persistence, đăng nhập, kiểm tra và thu hồi session; tách rõ test cùng máy, iOS Safari và smoke CI. Ghi cổng iOS là HTTPS hostname có RP ID trùng khớp; hiện chưa cấu hình hostname hoặc thay Worker từ xa.
+- Cài package offline không thành công do npm cache thiếu `tsyringe` (`ENOTCACHED`). Thử `npm ci` online chờ registry hơn 50 giây không có output và đã dừng; không thay đổi file source. CI run [44553204486](https://github.com/lylamkhai218/tttemple/actions/runs/44553204486) vẫn là bằng chứng mới nhất: 61/61 test, build, Wrangler dry-run và smoke SQLite Durable Object local.
+- Chưa thực hiện authenticator vật lý hoặc iPhone. P2 còn mở; hostname HTTPS, tài khoản/luồng auth đã duyệt, Cloudflare CPU telemetry và phương án recovery vẫn là cổng riêng.
+- Nguồn: cấu hình `worker.mjs`, `vite.config.mjs`, README POC, kết quả `npm ci` ngày 19/11/2026 và CI run [44553204486](https://github.com/lylamkhai218/tttemple/actions/runs/44553204486).
