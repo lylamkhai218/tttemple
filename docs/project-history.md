@@ -364,3 +364,11 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - Test storage transactional gửi 20 lượt đồng thời, xác nhận chính xác 5 lượt được nhận, rồi xác nhận cửa sổ mới mở lại; kiểm tra cục bộ cùng bộ đọc body/state đạt 8/8. `node --check` và `git diff --check` đạt.
 - GitHub Actions run [44550788943](https://github.com/lylamkhai218/tttemple/actions/runs/44550788943), commit `b045531`, thành công: 60/60 test, build, Wrangler dry-run và smoke SQLite Durable Object local. Không deploy hoặc đổi cấu hình Cloudflare. P2 vẫn cần authenticator/iOS thật, CPU telemetry Cloudflare, recovery và review bảo mật.
 - Nguồn: code `poc/auth/webauthn/poc-state.mjs`, `worker.mjs`, `tests/persistent-state.test.mjs`; log run [44550788943](https://github.com/lylamkhai218/tttemple/actions/runs/44550788943).
+
+## 19/11/2026 - P2 ngăn cấp phiên sau khi tài khoản bị khóa
+
+- Rà soát race condition cho thấy đăng nhập đã xác minh có thể gọi `issueSession()` sau khi một thao tác khóa hoàn tất. Token vẫn bị `validateSession()` từ chối khi đang khóa, nhưng hash phiên có thể được ghi lại sau khi hàm khóa đã xóa phiên.
+- Đưa kiểm tra `state.locked` vào transaction cấp session; khi tài khoản đã khóa, state không lưu hash và handler trả lỗi `account_locked`. Bổ sung khẳng định ở test state và transactional storage rằng cấp phiên sau khóa trả `null`.
+- Kiểm tra cục bộ cùng body/state đạt 8/8; cú pháp và diff sạch. GitHub Actions run [44551885489](https://github.com/lylamkhai218/tttemple/actions/runs/44551885489), commit `e465a88`, thành công với 60/60 test, build, Wrangler dry-run và smoke SQLite Durable Object local.
+- Đây không phải kiểm tra trên Cloudflare remote. P2 còn chờ authenticator/iOS, CPU telemetry truy xuất được, recovery và review bảo mật; không deploy hoặc đổi cấu hình Cloudflare.
+- Nguồn: `poc/auth/webauthn/poc-state.mjs`, `worker.mjs`, `tests/poc-state.test.mjs`, `tests/persistent-state.test.mjs`; log CI run [44551885489](https://github.com/lylamkhai218/tttemple/actions/runs/44551885489).
