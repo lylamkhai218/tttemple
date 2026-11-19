@@ -333,3 +333,11 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - GitHub Actions run [44546650556](https://github.com/lylamkhai218/tttemple/actions/runs/44546650556) thành công: 54/54 test, build, Wrangler dry-run và smoke runtime. Trong Wrangler local, hai session giả liên tiếp chỉ giữ session mới; session còn hợp lệ sau Worker restart; revoke vẫn có hiệu lực sau restart khác. Smoke cũng xác nhận challenge replay bị từ chối và trạng thái khóa bền qua restart. Token không được ghi log hoặc lưu vào repo.
 - Đây chỉ là runtime local mô phỏng SQLite Durable Object; chưa deploy hoặc đo Cloudflare remote, chưa dùng authenticator thật và không chứng minh recovery production. Không thay đổi AP, game login, billing hoặc cấu hình Cloudflare remote.
 - Nguồn: GitHub Actions #9 logs; `poc/auth/webauthn/worker-cloudflare.mjs`, `wrangler.local.jsonc` và `tests/durable-object-smoke.mjs`.
+
+## 19/11/2026 - P2 giới hạn bộ nhớ khi đọc JSON request
+
+- Rà soát Worker POC phát hiện `readJson()` dùng `request.text()` rồi mới đếm byte. Body lớn không khai báo hoặc khai sai `Content-Length` vẫn có thể được giữ toàn bộ trong bộ nhớ trước khi bị từ chối.
+- Chuyển sang reader streaming với trần 64 KiB, kiểm tra `Content-Length` như một kiểm tra sớm nhưng vẫn đếm byte thực, hủy stream khi vượt trần và giải mã UTF-8 strict trước `JSON.parse`. Worker trả `invalid_request` cho body không hợp lệ.
+- Tách helper thành `poc/auth/webauthn/request-json.mjs`; thêm bốn ca kiểm tra stream vượt trần không Content-Length, UTF-8 lỗi, JSON hợp lệ và Content-Length khai vượt mức. Hai test state hiện có và bốn test helper đạt 6/6 cục bộ. `node --check` và `git diff --check` đạt.
+- Test tích hợp Worker và CI chưa chạy cho thay đổi này: package `@simplewebauthn/server` thiếu trong checkout vì npm registry trả `ECONNRESET`. CI cài package riêng qua `npm ci` theo lockfile nên cần push để xác minh tích hợp. Không deploy hoặc thay đổi cấu hình/traffic Cloudflare. P2 vẫn chưa đạt; authenticator thật, iOS, CPU telemetry Cloudflare, phương án recovery và review bảo mật còn mở.
+- Nguồn: diff checkout ngày 19/11/2026 tại `poc/auth/webauthn/worker.mjs`, `request-json.mjs`, `tests/request-body.test.mjs`; kết quả `node --test` với 6 ca.

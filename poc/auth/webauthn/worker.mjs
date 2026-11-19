@@ -5,6 +5,7 @@ import {
   verifyRegistrationResponse,
 } from '@simplewebauthn/server';
 import { createPocState } from './poc-state.mjs';
+import { readBoundedJson } from './request-json.mjs';
 
 const RP_ID = 'localhost';
 const RP_ORIGIN = 'http://localhost:5178';
@@ -14,7 +15,6 @@ const ACCOUNT_LABEL = 'Synthetic user';
 const ENROLLMENT_CODE = 'local-demo-only';
 const ADMIN_DEMO_CODE = 'local-demo-only';
 const SUPPORTED_ALGORITHMS = [-7, -257];
-const MAX_BODY_BYTES = 64 * 1024;
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status,
@@ -27,20 +27,6 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
 
 function hasExpectedOrigin(request) {
   return request.headers.get('origin') === RP_ORIGIN;
-}
-
-async function readJson(request) {
-  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) return null;
-  const declaredLength = Number(request.headers.get('content-length') || 0);
-  if (declaredLength > MAX_BODY_BYTES) return null;
-  const raw = await request.text();
-  if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return null;
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
 }
 
 function authToken(request) {
@@ -79,7 +65,10 @@ async function handleRequest(request, state) {
 
   if (request.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
   if (!hasExpectedOrigin(request)) return json({ ok: false, error: 'origin_rejected' }, 403);
-  const body = await readJson(request);
+  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
+    return json({ ok: false, error: 'invalid_request' }, 400);
+  }
+  const body = await readBoundedJson(request);
   if (!body) return json({ ok: false, error: 'invalid_request' }, 400);
 
   if (url.pathname === '/api/webauthn/register/options') {
