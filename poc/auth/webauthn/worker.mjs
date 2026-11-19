@@ -152,8 +152,8 @@ async function handleRequest(request, state) {
     if (!(await state.canAuthenticate())) return json({ ok: false, error: await state.isLocked() ? 'account_locked' : 'temporarily_limited' }, 429);
     const credential = await state.getCredential();
     if (!credential) return json({ ok: false, error: 'credential_not_registered' }, 409);
+    if (!(await state.beginAuthenticationAttempt())) return json({ ok: false, error: await state.isLocked() ? 'account_locked' : 'temporarily_limited' }, 429);
     if (typeof body.challenge !== 'string' || !(await state.consumeChallenge('authentication', body.challenge))) {
-      await state.recordAuthenticationFailure();
       return json({ ok: false, error: 'authentication_rejected' }, 401);
     }
     try {
@@ -172,7 +172,6 @@ async function handleRequest(request, state) {
         advancedFIDOConfig: { userVerification: 'required' },
       });
       if (!verification.verified || !verification.authenticationInfo.userVerified) {
-        await state.recordAuthenticationFailure();
         console.log(JSON.stringify({ event: 'synthetic_passkey_authentication', outcome: 'rejected' }));
         return json({ ok: false, error: 'authentication_rejected' }, 401);
       }
@@ -182,7 +181,6 @@ async function handleRequest(request, state) {
         verification.authenticationInfo.newCounter,
       );
       if (!counterUpdated) {
-        await state.recordAuthenticationFailure();
         return json({ ok: false, error: 'authentication_rejected' }, 401);
       }
       await state.clearAuthenticationFailures();
@@ -190,7 +188,6 @@ async function handleRequest(request, state) {
       console.log(JSON.stringify({ event: 'synthetic_passkey_authentication', outcome: 'verified', user_verified: true }));
       return json({ ok: true, sessionToken, account: ACCOUNT_ID, expiresInMs: 15 * 60 * 1000 });
     } catch (error) {
-      await state.recordAuthenticationFailure();
       console.log(JSON.stringify({ event: 'synthetic_passkey_authentication', outcome: 'rejected', error_type: error instanceof Error ? error.name : 'unknown' }));
       return json({ ok: false, error: 'authentication_rejected' }, 401);
     }

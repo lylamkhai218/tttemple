@@ -144,15 +144,16 @@ export function createPocState({ cryptoApi = globalThis.crypto, now = () => Date
         return state.authFailures < AUTH_FAILURE_LIMIT;
       });
     },
-    async recordAuthenticationFailure() {
+    async beginAuthenticationAttempt() {
       const currentTime = now();
       return update((state) => {
         if (currentTime - state.authWindowStartedAt >= AUTH_WINDOW_MS) {
           state.authWindowStartedAt = currentTime;
           state.authFailures = 0;
         }
+        if (state.locked || state.authFailures >= AUTH_FAILURE_LIMIT) return false;
         state.authFailures += 1;
-        return state.authFailures;
+        return true;
       });
     },
     async clearAuthenticationFailures() {

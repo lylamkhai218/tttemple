@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createPocState } from '../poc-state.mjs';
+import { createPocState, POC_LIMITS } from '../poc-state.mjs';
 
 function createPersistentStorageFixture() {
   let values = new Map();
@@ -46,7 +46,8 @@ test('transactional storage preserves synthetic auth state across handler recrea
   assert.equal(await state.consumeChallenge('registration', challenge), null);
   assert.equal((await state.getCredential()).counter, 5);
   assert.equal(await state.validateSession(token), true);
-  await Promise.all(Array.from({ length: 5 }, () => state.recordAuthenticationFailure()));
+  const attempts = await Promise.all(Array.from({ length: 5 }, () => state.beginAuthenticationAttempt()));
+  assert.equal(attempts.filter(Boolean).length, 5);
 
   state = createPocState({ storage });
   assert.equal(await state.canAuthenticate(), false);
@@ -71,4 +72,17 @@ test('concurrent challenge consumption succeeds once and session replacement is 
   const [first, second] = await Promise.all([state.issueSession(), state.issueSession()]);
   assert.notEqual(first, second);
   assert.equal(Number(await state.validateSession(first)) + Number(await state.validateSession(second)), 1);
+});
+
+test('authentication attempt reservations enforce the limit under concurrency', async () => {
+  let now = 1_000_000;
+  const storage = createPersistentStorageFixture();
+  const state = createPocState({ storage, now: () => now });
+  const attempts = await Promise.all(Array.from({ length: 20 }, () => state.beginAuthenticationAttempt()));
+
+  assert.equal(attempts.filter(Boolean).length, POC_LIMITS.authenticationFailureLimit);
+  assert.equal(await state.canAuthenticate(), false);
+
+  now += POC_LIMITS.authenticationWindowMs;
+  assert.equal(await state.beginAuthenticationAttempt(), true);
 });

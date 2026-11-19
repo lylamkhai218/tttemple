@@ -36,7 +36,7 @@ test('five failed authentications are limited and locking revokes the session', 
   const token = await state.issueSession();
   for (let attempt = 0; attempt < POC_LIMITS.authenticationFailureLimit; attempt += 1) {
     assert.equal(await state.canAuthenticate(), true);
-    await state.recordAuthenticationFailure();
+    assert.equal(await state.beginAuthenticationAttempt(), true);
   }
   assert.equal(await state.canAuthenticate(), false);
   await state.lockAccount();
