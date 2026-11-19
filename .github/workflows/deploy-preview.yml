@@ -42,6 +42,9 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install isolated WebAuthn POC dependencies
+        run: npm ci --prefix poc/auth/webauthn
+
       - name: Run existing checks
         run: pnpm test
 

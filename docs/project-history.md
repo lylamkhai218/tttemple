@@ -298,3 +298,9 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - `pnpm test` đạt 52/52; `pnpm build` đạt với 29 module. Wrangler 4.164.0 `deploy --dry-run --config poc/vite-preview/wrangler.jsonc` thoát mã 0, đọc 16 file asset từ `dist` và nhận binding `ASSETS`; không deploy Worker.
 - Lượt dry-run đầu cảnh báo Wrangler không ghi được log vào thư mục user profile ngoài workspace (`EPERM`) nhưng vẫn đóng gói. Đọc tài liệu Wrangler xác nhận có biến `WRANGLER_LOG_PATH`; chạy lại với log trong thư mục tạm thì dry-run sạch. Nguồn: https://developers.cloudflare.com/workers/wrangler/system-environment-variables/.
 - Workflow deploy thủ công vẫn chưa push hoặc chạy trên GitHub; Actions secrets chưa xác minh, chưa kiểm tra IP ngoài Việt Nam. Không đổi cấu hình Cloudflare hoặc traffic. P1 vẫn chưa đạt.
+## 19/11/2026 - P1 xử lý CI fail do dependency POC tách riêng
+
+- GitHub Actions run `44499048283` cho commit `feb11eb` fail tại `pnpm test`: 47 bài qua, 1 lỗi nạp `poc/auth/webauthn/tests/poc-state.test.mjs` vì `@simplewebauthn/server` chưa có trong dependency root. Root `pnpm install --frozen-lockfile` không cài package có lockfile riêng của POC.
+- Thêm bước `npm ci --prefix poc/auth/webauthn` sau root install trong cả `.github/workflows/ci.yml` và `.github/workflows/deploy-preview.yml`. Đây là thay đổi workflow, chưa push/rerun.
+- Đã thử cài lại local theo `package-lock.json`; npm registry trả `ECONNRESET`, nên `node_modules` riêng của POC hiện thiếu package và local test fail vì cùng nguyên nhân. Không sửa lockfile, mã POC hoặc cấu hình Cloudflare; không deploy. Cần CI sau khi push để xác minh bước cài đặt trên runner.
+- Nguồn: GitHub Actions run https://github.com/lylamkhai218/tttemple/actions/runs/44499048283 và log job; kết quả `npm ci` local ngày 19/11/2026.

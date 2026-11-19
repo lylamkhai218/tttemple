@@ -21,5 +21,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Install isolated WebAuthn POC dependencies
+        run: npm ci --prefix poc/auth/webauthn
       - run: pnpm test
       - run: pnpm build
