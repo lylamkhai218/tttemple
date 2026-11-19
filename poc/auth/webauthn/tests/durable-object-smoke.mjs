@@ -78,6 +78,12 @@ async function post(path, body) {
   });
 }
 
+async function smoke(path, body = {}) {
+  const response = await post(path, { adminCode: 'local-demo-only', ...body });
+  assert.equal(response.status, 200);
+  return response.json();
+}
+
 let worker = startWorker();
 try {
   await waitForWorker(worker);
@@ -108,6 +114,22 @@ try {
   assert.equal(replay.status, 400);
   assert.equal((await replay.json()).error, 'challenge_invalid_or_used');
 
+  const firstSession = await smoke('/__smoke/session/issue');
+  const secondSession = await smoke('/__smoke/session/issue');
+  assert.equal((await smoke('/__smoke/session/validate', { token: firstSession.token })).valid, false);
+  assert.equal((await smoke('/__smoke/session/validate', { token: secondSession.token })).valid, true);
+
+  await stopWorker(worker);
+  worker = startWorker();
+  await waitForWorker(worker);
+  assert.equal((await smoke('/__smoke/session/validate', { token: secondSession.token })).valid, true);
+  await smoke('/__smoke/session/revoke');
+
+  await stopWorker(worker);
+  worker = startWorker();
+  await waitForWorker(worker);
+  assert.equal((await smoke('/__smoke/session/validate', { token: secondSession.token })).valid, false);
+
   const lock = await post('/api/synthetic-admin/lock', { adminCode: 'local-demo-only' });
   assert.equal(lock.status, 200);
   await stopWorker(worker);
@@ -115,7 +137,7 @@ try {
   await waitForWorker(worker);
   const lockedState = await fetch(`${baseUrl}/api/state`).then((response) => response.json());
   assert.equal(lockedState.locked, true);
-  console.log('Durable Object local smoke passed: challenge replay rejected and lock persisted after restart.');
+  console.log('Durable Object local smoke passed: challenge replay rejected, one session persisted and was revoked, and lock persisted after restart.');
 } finally {
   await stopWorker(worker);
   await removePersistentState();
