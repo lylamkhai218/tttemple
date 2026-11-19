@@ -27,3 +27,5 @@ jobs:
       - run: pnpm build
       - name: Validate local WebAuthn Durable Object bundle
         run: pnpm exec wrangler deploy --dry-run --config poc/auth/webauthn/wrangler.local.jsonc
+      - name: Smoke test WebAuthn Durable Object persistence
+        run: node poc/auth/webauthn/tests/durable-object-smoke.mjs
