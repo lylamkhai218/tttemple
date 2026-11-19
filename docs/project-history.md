@@ -348,3 +348,11 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - Bốn test body streaming mới cùng Worker integration test đều chạy trong suite CI. Smoke runtime xác nhận challenge replay bị từ chối, session được giữ và thu hồi qua restart, trạng thái khóa còn sau restart.
 - Đây là test trên GitHub runner với Wrangler local; không phải deploy hoặc kiểm thử Cloudflare remote. Bundle game hiện 539,30 kB gzip 141,29 kB và vẫn có cảnh báo Vite chunk trên 500 kB. P2 chưa đạt vì còn authenticator/iOS thật, đo CPU trên Cloudflare có telemetry truy xuất được, recovery và review bảo mật.
 - Nguồn: log run [44548661766](https://github.com/lylamkhai218/tttemple/actions/runs/44548661766); commit `8017edd`.
+
+## 19/11/2026 - P2 giới hạn body cho smoke endpoint local
+
+- Rà tiếp entrypoint local-only phát hiện endpoint `/__smoke/` vẫn gọi `request.text()` rồi mới kiểm tra mốc 1 KiB. Dù endpoint chỉ bật trong `SMOKE_MODE=1` và config local, đây vẫn là đường đọc body không bị chặn trước.
+- Dùng chung `readBoundedJson()` với giới hạn cấu hình được, đặt API smoke về 1 KiB và yêu cầu `application/json`. Thêm test xác nhận giới hạn thấp hơn được thực thi; bộ test body/state local đạt 7/7.
+- CI run [44549611574](https://github.com/lylamkhai218/tttemple/actions/runs/44549611574), commit `79832b7`, đạt: 59/59 test, build, Wrangler dry-run và smoke test SQLite Durable Object local.
+- Không deploy hoặc đổi cấu hình Cloudflare remote. Đây vẫn là kiểm tra Wrangler local trên GitHub runner; P2 chưa đạt authenticator/iOS, CPU Cloudflare, recovery hoặc review bảo mật.
+- Nguồn: diff `79832b7`; log GitHub Actions run [44549611574](https://github.com/lylamkhai218/tttemple/actions/runs/44549611574).
