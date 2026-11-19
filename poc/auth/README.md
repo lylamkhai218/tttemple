@@ -75,7 +75,7 @@ Mở `http://localhost:5178`. POC chỉ có tài khoản `synthetic-user` cùng 
 
 Trình duyệt giữ user gesture khi gọi WebAuthn, nên thao tác tách làm hai nút: chuẩn bị options rồi bấm đăng ký/đăng nhập. Bấm “Tạo passkey trên thiết bị” sẽ tạo một credential thật trên authenticator của thiết bị, gắn với RP `localhost`; chỉ bấm khi chủ máy chủ động muốn thử. Không tạo passkey hoặc dùng tài khoản thật khi kiểm tra tự động.
 
-`npm test --prefix poc/auth/webauthn` chạy các test state, storage transactional giả lập, challenge dùng một lần, origin, replay, giới hạn thử sai, thu hồi/thay phiên và vector chữ ký ECDSA tổng hợp. Các bài storage chạy qua adapter tương thích API transaction, chưa thay thế kiểm thử runtime Durable Object thực. Đây chưa phải kiểm thử WebAuthn đầu-cuối bằng authenticator.
+`npm test --prefix poc/auth/webauthn` chạy các test state, storage transactional giả lập, challenge dùng một lần, origin, replay, giới hạn thử sai, thu hồi/thay phiên và vector chữ ký ECDSA tổng hợp. CI còn chạy `tests/durable-object-smoke.mjs` qua Wrangler local: tạo challenge, restart Worker, từ chối assertion giả, từ chối replay, khóa tài khoản rồi restart lần nữa để xác minh khóa còn. Run [44545367865](https://github.com/lylamkhai218/tttemple/actions/runs/44545367865) đạt toàn bộ 54 test, build, dry-run và smoke test. Đây vẫn không phải Cloudflare remote hoặc WebAuthn đầu-cuối bằng authenticator thật.
 
 `worker-ecdsa-benchmark.mjs` dùng một public key/challenge/signature tổng hợp để đo phần xác minh chữ ký P-256 trên Worker. Nó chỉ đo primitive chữ ký, không đại diện toàn bộ xác minh WebAuthn, lưu credential, D1 hay chi phí request thực.
 
