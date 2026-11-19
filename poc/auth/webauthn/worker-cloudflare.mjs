@@ -1,6 +1,7 @@
 // Local-only Worker entrypoint. Do not deploy this synthetic authentication POC.
 import { DurableObject } from 'cloudflare:workers';
 import { createPocState } from './poc-state.mjs';
+import { readBoundedJson } from './request-json.mjs';
 import { createWebAuthnHandler } from './worker.mjs';
 
 const SMOKE_ORIGIN = 'http://localhost:5178';
@@ -40,10 +41,11 @@ export default {
       if (env.SMOKE_MODE !== '1' || request.method !== 'POST' || request.headers.get('origin') !== SMOKE_ORIGIN) {
         return new Response('Not found', { status: 404 });
       }
-      const raw = await request.text();
-      if (raw.length > 1024) return json({ ok: false, error: 'invalid_request' }, 400);
-      let body;
-      try { body = JSON.parse(raw); } catch { return json({ ok: false, error: 'invalid_request' }, 400); }
+      if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
+        return json({ ok: false, error: 'invalid_request' }, 400);
+      }
+      const body = await readBoundedJson(request, { maxBytes: 1024 });
+      if (!body) return json({ ok: false, error: 'invalid_request' }, 400);
       if (!body || body.adminCode !== SMOKE_ADMIN_CODE) return json({ ok: false, error: 'admin_rejected' }, 403);
 
       const id = env.SYNTHETIC_AUTH.idFromName('synthetic-user');

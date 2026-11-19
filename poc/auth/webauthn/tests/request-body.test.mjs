@@ -54,3 +54,13 @@ test('rejects a declared body length over the limit before reading it', async ()
 
   assert.equal(await readBoundedJson(request), null);
 });
+
+test('supports a tighter body limit for local-only smoke endpoints', async () => {
+  const request = new Request('http://localhost:5178/__smoke/session/issue', {
+    method: 'POST',
+    headers: { origin, 'content-type': 'application/json' },
+    body: `${' '.repeat(1023)}{}`,
+  });
+
+  assert.equal(await readBoundedJson(request, { maxBytes: 1024 }), null);
+});

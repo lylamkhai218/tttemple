@@ -1,9 +1,10 @@
 export const MAX_BODY_BYTES = 64 * 1024;
 
-export async function readBoundedJson(request) {
+export async function readBoundedJson(request, { maxBytes = MAX_BODY_BYTES } = {}) {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) throw new TypeError('Invalid JSON body limit');
   const contentLength = request.headers.get('content-length');
   if (contentLength !== null) {
-    if (!/^\d+$/.test(contentLength) || !Number.isSafeInteger(Number(contentLength)) || Number(contentLength) > MAX_BODY_BYTES) {
+    if (!/^\d+$/.test(contentLength) || !Number.isSafeInteger(Number(contentLength)) || Number(contentLength) > maxBytes) {
       try { await request.body?.cancel(); } catch {}
       return null;
     }
@@ -19,7 +20,7 @@ export async function readBoundedJson(request) {
       if (done) break;
       if (!(value instanceof Uint8Array)) return null;
       totalBytes += value.byteLength;
-      if (totalBytes > MAX_BODY_BYTES) {
+      if (totalBytes > maxBytes) {
         await reader.cancel();
         return null;
       }
