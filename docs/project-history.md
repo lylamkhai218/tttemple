@@ -326,3 +326,10 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - Đây là xác minh runtime Wrangler local với SQLite DO, không phải deploy hoặc phép đo trên Cloudflare remote. Không đổi Worker Cloudflare, cấu hình Observability, billing hay AP. Authenticator thật, kiểm thử iOS, recovery và review bảo mật vẫn còn mở.
 - `gh secret list --repo lylamkhai218/tttemple` trong lượt này trả danh sách rỗng; không có Actions secrets, vì vậy P1 deploy vẫn chờ cấu hình secrets. Không đọc hoặc ghi giá trị bí mật.
 - Nguồn: run logs của GitHub Actions #7; https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/ và https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/.
+
+## 19/11/2026 - P2 smoke test session rotation và revoke qua Durable Object restart
+
+- Commit `3b8f6c2` thêm các RPC và endpoint smoke chỉ bật trong config local bằng `SMOKE_MODE=1`. Không có endpoint này trong Worker entrypoint chạy game hoặc config khác; config local vẫn được ghi rõ là không deploy.
+- GitHub Actions run [44546650556](https://github.com/lylamkhai218/tttemple/actions/runs/44546650556) thành công: 54/54 test, build, Wrangler dry-run và smoke runtime. Trong Wrangler local, hai session giả liên tiếp chỉ giữ session mới; session còn hợp lệ sau Worker restart; revoke vẫn có hiệu lực sau restart khác. Smoke cũng xác nhận challenge replay bị từ chối và trạng thái khóa bền qua restart. Token không được ghi log hoặc lưu vào repo.
+- Đây chỉ là runtime local mô phỏng SQLite Durable Object; chưa deploy hoặc đo Cloudflare remote, chưa dùng authenticator thật và không chứng minh recovery production. Không thay đổi AP, game login, billing hoặc cấu hình Cloudflare remote.
+- Nguồn: GitHub Actions #9 logs; `poc/auth/webauthn/worker-cloudflare.mjs`, `wrangler.local.jsonc` và `tests/durable-object-smoke.mjs`.
