@@ -20,7 +20,9 @@ Chế độ local có nút Chat thử. Tin nhắn chỉ chuyển qua các kết 
 
 Khi game chạy với `?phong-thu=1`, ba thao tác thắp hương, gõ chuông và gõ mõ chỉ phát hiệu ứng sau khi Durable Object local xác nhận. Worker kiểm tra đúng loại nghi lễ, vị trí nhân vật gần điểm tương ứng, tối thiểu 1 giây giữa hai yêu cầu của cùng người và 250 ms giữa các yêu cầu trong cả phòng. Yêu cầu bị từ chối không tạo hiệu ứng. Các client nhận hiệu ứng khói/pulse; trình duyệt có thể chặn tự phát âm thanh ở người chỉ nhận sự kiện.
 
-Chạy Worker bằng lệnh ở trên, chạy `pnpm dev` trong cửa sổ khác, rồi mở hai tab `http://127.0.0.1:5173/?phong-thu=1`. Đi tới cùng điểm hành lễ ở mỗi tab và bấm nút tương tác. Hai cửa sổ này chỉ là cùng một máy và cùng Worker local. Không có đăng nhập, lưu tràng hạt, quyền, dữ liệu bền, kiểm tra thay đổi mới, thử Cloudflare hoặc thử thiết bị thật. Không deploy Worker phòng thử.
+Khi chạy thêm Worker D1 local theo hướng dẫn trong `poc/beads/README.md`, tràng hạt cũng lưu vào SQLite D1 local. Mọi tab dùng chung danh tính giả `synthetic-local`; một lần vuốt tạo mã thao tác và chỉ tăng tổng sau khi server xác nhận. Nếu phản hồi bị timeout tổng hợp, client thử lại tối đa ba lần với cùng mã. Nếu chưa xác nhận sau đó, lần tương tác kế tiếp dùng lại mã còn chờ. Đây chỉ là chống trùng trong phiên tab hiện tại; đóng hoặc tải lại tab khi kết quả chưa rõ có thể làm mất mã chờ.
+
+Chạy Worker bằng lệnh ở trên, chạy `pnpm dev` trong cửa sổ khác, rồi mở hai tab `http://127.0.0.1:5173/?phong-thu=1`. Đi tới cùng điểm hành lễ ở mỗi tab và bấm nút tương tác. Hai cửa sổ này chỉ là cùng một máy và cùng Worker local. Ngày 19/11/2026, hai tab đã kết nối đồng thời và hiển thị hai người; D1 local được đọc/ghi từ giao diện, một lần vuốt tạo một hạt và tab kia đọc được tổng mới khi mở lại tràng. Đây là dữ liệu giả trên cùng máy, chưa có đăng nhập, phân quyền, D1 production, retry qua mạng thật, phục hồi, kiểm tra Cloudflare hoặc thiết bị thật. Không deploy Worker phòng thử.
 
 ## Kiểm tra tải giới hạn local
 

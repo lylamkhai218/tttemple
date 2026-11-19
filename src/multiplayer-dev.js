@@ -6,6 +6,7 @@ export function startLocalRoom(scene, getPosition, clearMovement = () => {}, onD
   const status = document.createElement('div');
   status.className = 'local-room-status';
   status.setAttribute('role', 'status');
+  status.dataset.state = 'connecting';
   status.textContent = 'Phòng thử cục bộ: đang kết nối';
   document.querySelector('.overlay').append(status);
   const chat = document.createElement('section');
@@ -41,7 +42,7 @@ export function startLocalRoom(scene, getPosition, clearMovement = () => {}, onD
   const bodyMaterial = new THREE.MeshStandardMaterial({ color: '#738578', roughness: 1 });
   const headMaterial = new THREE.MeshStandardMaterial({ color: '#e2b896', roughness: 1 });
   let myId = null, socket = null, retryTimer = null, attempts = 0, stopped = false;
-  const updateStatus = () => { const text = `Phòng thử cục bộ: ${players.size + 1} người`; if (status.textContent !== text) status.textContent = text; };
+  const updateStatus = () => { const text = `Phòng thử cục bộ: ${players.size + 1} người`; status.dataset.state = 'connected'; if (status.textContent !== text) status.textContent = text; };
   function updatePlayer(player) {
     if (!player || player.id === myId) return;
     let avatar = players.get(player.id);
@@ -93,10 +94,11 @@ export function startLocalRoom(scene, getPosition, clearMovement = () => {}, onD
       for (const avatar of players.values()) scene.remove(avatar);
       players.clear();
       if (stopped) return;
+      status.dataset.state = 'reconnecting';
       status.textContent = 'Phòng thử cục bộ: đang kết nối lại';
       retryTimer = setTimeout(connect, Math.min(500 * 2 ** attempts++, 5000));
     });
-    connection.addEventListener('error', () => { status.textContent = 'Phòng thử cục bộ: không kết nối được'; });
+    connection.addEventListener('error', () => { status.dataset.state = 'error'; status.textContent = 'Phòng thử cục bộ: không kết nối được'; });
   }
   connect();
   const timer = setInterval(() => {

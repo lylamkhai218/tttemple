@@ -1,0 +1,35 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+  background: #f7f5ec;
+  color: #1b3a4b;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; padding: 24px; }
+
+main { width: min(100%, 720px); margin: 0 auto; }
+
+.eyebrow { color: #8c672a; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+
+h1 { margin: 0.25em 0; font-family: Georgia, serif; font-size: clamp(2rem, 7vw, 3.1rem); }
+
+section { margin: 20px 0; padding: 18px; border: 1px solid #d7ddda; border-radius: 16px; background: #fffefa; }
+
+h2 { margin-top: 0; font-size: 1.15rem; }
+
+label { display: block; margin: 0 0 6px; font-weight: 600; }
+
+input { width: 100%; min-height: 44px; margin-bottom: 12px; padding: 8px 12px; border: 1px solid #9eaaa6; border-radius: 8px; font: inherit; }
+
+button { min-height: 44px; margin: 4px 6px 4px 0; padding: 8px 14px; border: 0; border-radius: 10px; background: #315847; color: white; font: inherit; cursor: pointer; }
+
+button:disabled { background: #aab4af; cursor: not-allowed; }
+
+.notice { padding: 12px 14px; border-left: 4px solid #c09142; background: #f5ecd7; line-height: 1.55; }
+
+.result { min-height: 120px; }
+
+@media (max-width: 480px) { body { padding: 14px; } section { padding: 14px; } button { width: 100%; margin: 4px 0; } }

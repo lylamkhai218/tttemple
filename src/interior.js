@@ -26,6 +26,8 @@ export function createInterior(scene, buddhaImage) {
   for(const x of [-1.6,0,1.6]){box(gold,x,.58,-13.535,1.32,.72,.025);box(wood,x,.58,-13.505,1.18,.58,.025)}
   box(wood,0,2.85,-15.55,3.4,3.55,.12);box(gold,0,2.85,-15.47,3.16,3.31,.04);
   new THREE.TextureLoader().load(buddhaImage,texture=>{texture.colorSpace=THREE.SRGBColorSpace;const picture=new THREE.Mesh(new THREE.PlaneGeometry(2.32,3.08),new THREE.MeshBasicMaterial({map:texture}));picture.position.set(0,2.85,-15.43);root.add(picture)});
+  for(const x of [-1.22,1.22])box(gold,x,2.85,-15.37,.08,3.12,.055);
+  for(const y of [1.31,4.39])box(gold,0,y,-15.37,2.48,.08,.055);
   // Incense bowl, candles and lotus vases sit on the altar instead of the aisle.
   cyl(woodLight,0,1.32,-13.92,.25,.25);for(const x of [-.11,0,.11]){const stick=cyl(matRed,x,1.68,-13.92,.012,.55);stick.rotation.z=x*.25}
   for(const side of [-1,1]){

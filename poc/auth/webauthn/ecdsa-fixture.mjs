@@ -1,0 +1,1 @@
+export const fixture = Object.freeze({"publicKey":{"key_ops":["verify"],"ext":true,"kty":"EC","x":"4OpgSHHIgy5DF2RHQ01BaSpiRrLSr1Fyqq_veSQZjJI","y":"4v6kyFA_5J9yV7ZSV-N3vFrsDoy1G1zRliMJNB0lzoc","crv":"P-256"},"challenge":"5vYZzdvS2IseBXuQua10BEhfsMr3qtfnp8aZwXkOdU0","signature":"ypTsXluFZtEJU9bzSELqdRhD9wba3dwBjgdhNHa2w6F2kNa1KoNYhK3NgoiL7mBB4WCiRz8UlrbjxoQYwZqlgA"});

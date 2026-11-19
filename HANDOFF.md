@@ -1,6 +1,6 @@
 # TTTemple — bàn giao tiếp tục phát triển
 
-Ngày cập nhật: 18/11/2026. Đây là nguyên mẫu một người chơi; không dùng cho nhân viên như sản phẩm hoàn thiện.
+Ngày cập nhật: 19/11/2026. Đây là nguyên mẫu một người chơi; không dùng cho nhân viên như sản phẩm hoàn thiện.
 
 ## Chạy và kiểm tra
 
@@ -11,17 +11,29 @@ Ngày cập nhật: 18/11/2026. Đây là nguyên mẫu một người chơi; kh
 ## Hiện trạng
 
 - Có sân chung với hai khu công ty, chùa, cảnh quan, các nghi lễ cục bộ, tên và nhân vật mẫu, hai góc nhìn, va chạm và lối vào chính điện. Chỉ có POC phòng local bật thủ công trên Vite localhost; không có multiplayer production.
-- Phòng local có chat tổng hợp, đồng bộ cửa và handler kiểm tra phía server cho gõ chuông, gõ mõ, thắp hương. Các thay đổi nghi lễ mới chưa được chạy kiểm tra. Hình Phật hiện là ảnh 2D; số hạt chỉ lưu trên trình duyệt; âm thanh chuông là tổng hợp. Chưa có tài khoản thật, lưu hạt trên server hoặc hệ thống log production.
+- Giao diện mobile đã sửa ô tên lên 16px để tránh Safari iOS tự zoom khi focus, vùng chạm tối thiểu 44px và bố cục màn hình ngang có safe area/joystick. HUD màn chơi mới được thu gọn: hướng dẫn mặc định ẩn sau nút `?`, thao tác đầu trang dùng biểu tượng có nhãn trợ năng, bỏ chỉ đường và các nhãn lặp. `pnpm build` đạt; chưa xem được bản localhost sau sửa trong browser, chưa thử iPhone/Android thật.
+- P6 đang hoàn thiện: mái chính điện chuyển sang mặt low-poly cong có đầu đao vút; ảnh Phật có viền nổi. Ba texture PNG được giữ làm nguồn, bản build dùng WebP, tổng giảm từ 1.348.003 xuống 148.302 byte (89%). WAV tiếng mõ 322.320 byte được giữ làm nguồn; game dùng MP3 192 kbit/s 45.182 byte, giảm 277.138 byte (86%). Build mới nhất đạt, 29 module; JavaScript game 539,30 kB (gzip 141,29 kB), vẫn cảnh báo chunk trên 500 kB. 23 cụm trúc giảm từ 184 mesh xuống 46 InstancedMesh, tương ứng 138 draw call ít hơn theo cấu trúc mã. Chưa đo Lighthouse/FPS hoặc nghiệm thu thiết bị thật.
+- Ngày 19/11, thêm theme ngày - đêm theo `Asia/Ho_Chi_Minh`: hoàng hôn 18:00-19:00, đêm 19:00-04:00, bình minh 04:00-05:00. Cảnh 3D chuyển màu trời/sương/ánh sáng liên tục, trăng sao và hai đèn vàng ở chính điện; không thêm chữ hoặc điều khiển HUD. Đã xem local qua browser desktop và viewport giả lập dọc/ngang; không có console error/warning. Hạ trăng và sửa phân bố sao để bầu trời rõ khi camera ngẩng lên; góc mặc định vẫn tập trung vào sân. `pnpm test` đạt 52/52. Thiết kế và mốc kiểm tra ở `specs/night-mode-design.md`; chưa deploy, P6 vẫn mở.
+- Có một báo cáo iPhone Safari rơi vào fallback tải game lúc 23:00 ngày 18/11. Mã cho thấy dynamic import game bị reject; Worker metrics không ghi lỗi thực thi. Observability đã tắt vào lúc incident, sau đó được bật ngày 19/11 cho Worker thử game và POC xác thực. WebGL 2 là giả thuyết cần xác minh trên đúng model/iOS; log bật sau sự kiện không thể khôi phục dữ liệu cũ, chưa có kết luận hoặc bản sửa/deploy cho incident.
+- Cloudflare Workers Logs và Traces bật trên `tttemple-vite-test` và `tttemple-auth-poc`; log lưu bền vững, sample 100%, trace sample 10%, query string được che. Ngày 19/11, query `view=traces` lọc đúng service `tttemple-vite-test` từng trả 2 trace summaries trong 24 giờ. Lượt đối chiếu hẹp 2 giờ lúc 08:30 UTC có 6 invocation groups với trace ID nhưng 0 trace summaries; không lưu ID thô. Trace sampling vẫn 10%; không tăng sampling. Runbook dự thảo ở `docs/observability-runbook.md`; chưa chỉ định owner vận hành hoặc xử lý sự cố. Logpush vẫn tắt vì Workers Trace Events Logpush yêu cầu Workers Paid; account hiện Free và chưa có destination.
+- Phòng local có chat tổng hợp, đồng bộ cửa, handler kiểm tra nghi lễ và luồng ghi hạt D1 local. Ngày 19/11, hai tab trên cùng máy cùng đọc D1 local; một lần bấm hoặc vuốt tăng đúng một hạt, tab kia đọc tổng mới khi mở lại tràng. D1 chỉ dùng danh tính giả chung trong POC. Chưa có tài khoản thật, D1 production hoặc hệ thống log production. Hình Phật hiện là ảnh 2D; âm thanh chuông là tổng hợp.
 - Có hợp đồng event và POC PBKDF2 với dữ liệu giả; POC chỉ đo thời gian trên máy, không phải kết quả Cloudflare hoặc giải pháp đăng nhập hoàn chỉnh.
 - Repo GitHub được kết nối Cloudflare production, nhưng cấu hình triển khai cần được kiểm tra lại trước khi đưa mã game lên nhánh production: build hiện có thể không phù hợp với dự án Vite. Không đưa bản một người này lên làm sản phẩm nội bộ hoàn chỉnh.
 - Repo công khai: không commit bảng chấm công, danh sách nhân viên, mật khẩu, token, `.env`, `.dev.vars` hoặc dữ liệu riêng tư. Hai logo và ảnh Phật do người dùng cung cấp đã có trong tài nguyên nguyên mẫu.
 
 ## Việc tiếp theo
 
-1. Xác minh quyền repo, CI và cấu hình Cloudflare trong môi trường thử riêng; không thay đổi production khi chưa xác minh build và quyền.
-2. Hoàn thiện POC xác thực theo `poc/auth/README.md`: so sánh phương án an toàn và đo CPU/độ trễ thực tế trên Cloudflare bằng dữ liệu giả; không hạ độ mạnh để vượt quota.
+1. Hoàn thiện P1: đã thêm workflow deploy thủ công có xác nhận vào `poc/vite-preview/README.md` và `.github/workflows/deploy-preview.yml`; chạy test/build, Wrangler dry-run rồi deploy Worker thử. Local `pnpm test` đạt 52/52; `pnpm build` và Wrangler `deploy --dry-run` đạt với 16 assets và binding ASSETS. Workflow chưa push/chạy; GitHub Actions secrets chưa xác minh. Worker thử đang nhận 100% traffic ở version `d31f763e-ccb5-42b0-95dd-e9736cc9de00`, bản trước `b8bdbac0-119f-4c81-89fb-b00a1aedadf6`; lệnh deploy sẽ thay 100% traffic của Worker thử. Runbook rollback có sẵn nhưng chưa diễn tập. Còn xác minh pipeline chạy thật và kiểm tra IP ngoài Việt Nam. Không coi lọc IP là đăng nhập.
+2. Hoàn thiện P2: xem `specs/p2-auth-assessment.md` và `poc/auth/README.md`. POC passkey/WebAuthn local dùng dữ liệu giả; 5 test, Vite build và Wrangler dry-run đạt. Worker Cloudflare chỉ thử primitive ECDSA; query telemetry lọc theo Worker không trả event, nên chưa có CPU/wall. Đã xóa lịch và khôi phục idle version `44843bd1-b78d-4a09-814f-cd0a36e3b8b0`; không URL/route/binding. Cần đo lại với telemetry/tail truy xuất được, hoàn thiện D1/DO cho challenge/session, thử authenticator/iOS và review bảo mật. Workers Free chỉ cho 10 ms CPU/request, thấp hơn mẫu scrypt 250 ms; không hạ độ mạnh. Chưa duyệt đổi luồng mật khẩu trong AP; Access chưa bật. Không thêm billing hoặc bật Zero Trust. P2 tiếp tục song song P1; P3 và tích hợp P4-P5 chờ cổng P2.
 3. Sau cổng P2, triển khai tài khoản và quản trị với danh sách username và ánh xạ công ty đã được anh Khải duyệt.
-4. Tiếp tục P4–P5: kiểm tra POC local mới cho nghi lễ, rồi hoàn thiện luồng hạt và event với dữ liệu giả. Chỉ nối xác thực, multiplayer hoặc tràng hạt vào tài khoản sau khi P2 đạt.
-5. Kiểm thử trên iPhone/Android, kiểm tra hiệu năng, âm thanh, va chạm, 20 kết nối và khôi phục trước UAT.
+4. Điều tra incident Safari: xin model/iOS version, thử WebGL 2 và lấy console/network status khi tái hiện; sau đó tiếp tục P6 với Safari iOS dọc/ngang và Android thật, gồm keyboard, safe area, xoay màn hình và joystick. Logs và Traces đã quan sát; truy vấn 2 giờ chưa ghép được trace với 6 invocation groups. Còn thiếu owner dashboard/incident response. Không thể lấy lại log của incident trước thời điểm bật.
+5. Tiếp tục P4-P5 chỉ với dữ liệu giả cho tới khi P1-P2 đạt. Sau đó mới nối tài khoản, multiplayer hoặc D1 production; kiểm tra retry mạng, đóng tab và phục hồi.
+6. Trước UAT, kiểm thử iPhone/Android, Lighthouse/Core Web Vitals, âm thanh, va chạm, tải và khôi phục. Build gần nhất còn cảnh báo bundle chính 530,81 kB.
+
+## Review liên phòng 19/11/2026
+
+- Hai agent review theo vai trò senior tech và game artist; đây là review nội bộ bằng agent AI, chưa phải đánh giá của chuyên gia người thật 30 năm hoặc nghiệm thu mỹ thuật.
+- P1-P2 còn là cổng trước tài khoản, đồng bộ và dữ liệu thật. P4-P5 hiện chỉ được kiểm tra local; P6 tiếp tục độc lập.
+- Chi tiết kết luận, bằng chứng và giới hạn ở `specs/reviews/2026-11-19-cross-discipline.md`.
 
 Các con số và giai đoạn nghiệm thu phải gắn với bằng chứng thực tế; không coi kiểm thử hình thức trên máy là kiểm thử 20 người hoặc kết quả Cloudflare.

@@ -57,3 +57,32 @@ Sau đó đã xóa D1 tổng hợp vừa tạo và kiểm tra danh sách không 
 `wrangler dev --remote --test-scheduled` khởi động phiên xem trước nhưng yêu cầu thử trả Cloudflare 1042, không thu được kết quả. Sau đó triển khai phiên bản thử tổng hợp `8856c978-afc4-408b-93bb-f4ba37d8124a` tới Worker riêng `tttemple-auth-poc` với lịch tạm. Kết nối tail bị `ECONNRESET`; kết nối lại không nhận được sự kiện trong thời gian chờ. Dashboard hiển thị không có sự kiện trong một giờ tại lúc xem, lưu ý sự kiện có thể đến trễ; không có cơ sở kết luận rằng phép thử đã chạy hoặc đạt. Truy vấn API quan sát qua token Wrangler bị 403.
 
 Đã triển khai lại `wrangler.idle.jsonc`, phiên bản `3a00527a-39eb-4867-b40e-db2ba1100b04`, và API lịch trả `schedules: []`. Dashboard cũng xác nhận Worker không có URL hoặc route hoạt động; cấu hình POC trong repo đã để lịch rỗng. Tại lần kiểm tra này dashboard cho biết tài khoản dùng Workers Free. Chưa có số CPU hoặc wall time cho phép thử ECDSA, và không xem phép thử từ xa là thành công. Xem thêm [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/) về độ trễ áp dụng lịch.
+
+## POC passkey/WebAuthn cục bộ
+
+Thư mục `webauthn/` là POC riêng, dùng `@simplewebauthn/server` 14.1.0 và `@simplewebauthn/browser` 14.0.0. Chạy trong hai terminal:
+
+```powershell
+$env:XDG_CONFIG_HOME = "$PWD\poc\auth\webauthn\.wrangler"
+pnpm exec wrangler dev --config poc/auth/webauthn/wrangler.jsonc --ip 127.0.0.1 --port 8787
+```
+
+```powershell
+pnpm exec vite --config poc/auth/webauthn/vite.config.mjs
+```
+
+Mở `http://localhost:5178`. POC chỉ có tài khoản `synthetic-user`, company/role giả, challenge và session trong bộ nhớ; dừng hoặc khởi động lại Worker sẽ xóa trạng thái. Mã đăng ký và mã admin `local-demo-only` là giá trị giả, không có bảo vệ thật. Không deploy config này hoặc nối vào game.
+
+Trình duyệt giữ user gesture khi gọi WebAuthn, nên thao tác tách làm hai nút: chuẩn bị options rồi bấm đăng ký/đăng nhập. Bấm “Tạo passkey trên thiết bị” sẽ tạo một credential thật trên authenticator của thiết bị, gắn với RP `localhost`; chỉ bấm khi chủ máy chủ động muốn thử. Không tạo passkey hoặc dùng tài khoản thật khi kiểm tra tự động.
+
+`npm test --prefix poc/auth/webauthn` chạy các test state, challenge dùng một lần, origin, replay, giới hạn thử sai, thu hồi/thay phiên và vector chữ ký ECDSA tổng hợp. Đây chưa phải kiểm thử WebAuthn đầu-cuối bằng authenticator.
+
+`worker-ecdsa-benchmark.mjs` dùng một public key/challenge/signature tổng hợp để đo phần xác minh chữ ký P-256 trên Worker. Nó chỉ đo primitive chữ ký, không đại diện toàn bộ xác minh WebAuthn, lưu credential, D1 hay chi phí request thực.
+
+### Thử telemetry Worker tổng hợp ngày 19/11/2026
+
+Đã deploy mã benchmark lên Worker riêng `tttemple-auth-poc`, version `3fe65bba-0fd2-40bf-a4c2-ce4ba321cb51`, và đặt cron `* * * * *` tạm thời. Truy vấn Workers Observability đã lọc theo đúng service `tttemple-auth-poc` nhưng không trả event trong cửa sổ kiểm tra; do đó không có bằng chứng để báo CPU time, wall time, số lần chạy hoặc kết quả chữ ký trên Cloudflare. Không suy diễn rằng trigger đã chạy hay chưa chạy.
+
+Ngay sau đó đã xóa cron, deploy lại Worker idle version `44843bd1-b78d-4a09-814f-cd0a36e3b8b0`, rồi GET xác nhận `schedules: []`, workers.dev và preview URL tắt, không có route/binding. Workers Logs/Traces vẫn bật. Nếu telemetry trễ, handler idle hiện tại không thực hiện benchmark. Không dùng truy vấn account-wide vì ngoài phạm vi POC.
+
+Đây là một lần thử đo không thu được số liệu, không phải kết quả CPU. P2 vẫn chưa đạt; có thể tiếp tục bằng cách cấu hình query telemetry đã giới hạn theo Worker hoặc dùng tail có lọc, sau đó kiểm tra nhiều mẫu và vẫn khôi phục idle sau đo.

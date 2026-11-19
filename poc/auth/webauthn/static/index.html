@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+    <title>TTTemple - POC passkey tổng hợp</title>
+    <link rel="stylesheet" href="/style.css">
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">POC cục bộ - chỉ tài khoản giả</p>
+      <h1>Thử đăng nhập bằng passkey</h1>
+      <p class="notice">Không dùng tài khoản hoặc dữ liệu thật. POC lưu trạng thái trong bộ nhớ và sẽ mất khi khởi động lại Worker. Không triển khai lên Cloudflare.</p>
+
+      <section aria-labelledby="enroll-heading">
+        <h2 id="enroll-heading">1. Đăng ký passkey thử</h2>
+        <label for="enrollment-code">Mã thử cục bộ</label>
+        <input id="enrollment-code" autocomplete="off" value="local-demo-only">
+        <button id="prepare-register" type="button">Chuẩn bị đăng ký</button>
+        <button id="register" type="button" disabled>Tạo passkey trên thiết bị</button>
+      </section>
+
+      <section aria-labelledby="login-heading">
+        <h2 id="login-heading">2. Đăng nhập và quản lý phiên thử</h2>
+        <button id="prepare-login" type="button">Chuẩn bị đăng nhập</button>
+        <button id="login" type="button" disabled>Đăng nhập bằng passkey</button>
+        <button id="check-session" type="button">Kiểm tra phiên</button>
+        <button id="logout" type="button">Thu hồi phiên</button>
+      </section>
+
+      <section aria-labelledby="admin-heading">
+        <h2 id="admin-heading">3. Mô phỏng khóa tài khoản</h2>
+        <p>Chỉ để thử hành vi thu hồi phiên trong POC; chưa có xác thực quyền quản trị.</p>
+        <button id="lock-account" type="button">Khóa tài khoản tổng hợp</button>
+      </section>
+
+      <section class="result" aria-live="polite" aria-atomic="true">
+        <h2>Trạng thái</h2>
+        <p id="status">Chưa chạy thao tác.</p>
+        <p id="account-state"></p>
+      </section>
+    </main>
+  </body>
+</html>

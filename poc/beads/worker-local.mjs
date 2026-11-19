@@ -1,11 +1,45 @@
 // Local-only synthetic experiment. No authentication, production API or real data.
-import { recordBead } from './bead-store.mjs';
+import { getBeadCount, recordBead } from './bead-store.mjs';
 import { recordWithRetry } from './retry-local.mjs';
+
+const ACCOUNT_ID = 'synthetic-local';
+const ALLOWED_ORIGIN = 'http://127.0.0.1:5173';
+const SCHEMA = 'CREATE TABLE IF NOT EXISTS poc_bead_events(account_id TEXT NOT NULL, operation_id TEXT NOT NULL, day TEXT NOT NULL, PRIMARY KEY(account_id, operation_id))';
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Vary': 'Origin' },
+  });
+}
+
+async function api(request, env) {
+  const origin = request.headers.get('Origin');
+  if (origin !== ALLOWED_ORIGIN) return new Response('Forbidden', { status: 403 });
+  if (request.method === 'OPTIONS') return new Response(null, {
+    status: 204,
+    headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '600', 'Vary': 'Origin' },
+  });
+  await env.DB.prepare(SCHEMA).run();
+  if (request.method === 'GET') return json(await getBeadCount(env.DB, ACCOUNT_ID, Date.now()));
+  if (request.method !== 'POST' || Number(request.headers.get('Content-Length') || 0) > 256) return json({ error: 'invalid_request' }, 400);
+  let data;
+  try { data = await request.json(); } catch { return json({ error: 'invalid_request' }, 400); }
+  if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length !== 1 || typeof data.operationId !== 'string') return json({ error: 'invalid_request' }, 400);
+  try {
+    const result = await recordBead(env.DB, ACCOUNT_ID, data.operationId, Date.now());
+    return json({ ...result });
+  } catch { return json({ error: 'invalid_operation' }, 400); }
+}
+
 export default {
-  async fetch() { return new Response('Not found', { status: 404 }); },
+  async fetch(request, env) {
+    if (new URL(request.url).pathname !== '/api/beads') return new Response('Not found', { status: 404 });
+    return api(request, env);
+  },
   async scheduled(_event, env) {
     const db = env.DB;
-    await db.prepare('CREATE TABLE IF NOT EXISTS poc_bead_events(account_id TEXT NOT NULL, operation_id TEXT NOT NULL, day TEXT NOT NULL, PRIMARY KEY(account_id, operation_id))').run();
+    await db.prepare(SCHEMA).run();
     await db.prepare('DELETE FROM poc_bead_events').run();
     const before = Date.parse('2026-11-18T16:59:59Z');
     const after = Date.parse('2026-11-18T17:00:00Z');

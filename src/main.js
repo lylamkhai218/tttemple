@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import './style.css';
-import ttpcLogo from './assets/ttpc-logo.png';
-import ttvinaLogo from './assets/ttvina-logo.png';
-import mokugyoSound from './assets/mokugyo.wav';
-import buddhaImage from './assets/buddha-reference.png';
+import ttpcLogo from './assets/ttpc-logo.webp';
+import ttvinaLogo from './assets/ttvina-logo.webp';
+import mokugyoSound from './assets/mokugyo.mp3';
+import buddhaImage from './assets/buddha-reference.webp';
 import { createGarden } from './garden.js';
 import { createInterior } from './interior.js';
+import { createTempleRoof } from './temple-roof.js';
 import { groundHeight, insideSanctuary, resolveMovement } from './world.js';
 import { joystickVector } from './joystick.js';
 import { movementVector } from './movement.js';
@@ -13,22 +14,88 @@ import { beginBeadSwipe, moveBeadSwipe, finishBeadSwipe } from './bead-swipe.js'
 import { createIntro } from './intro.js';
 import { findStations } from './stations.js';
 import { createCameraController } from './camera-controller.js';
+import { getTimeOfDay } from './time-of-day.js';
+
+const previewClock = import.meta.env.DEV ? new URLSearchParams(location.search).get('clock') : null;
+function readTimeOfDay() {
+  const match = previewClock?.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if (!match) return getTimeOfDay();
+  return getTimeOfDay(new Date(Date.UTC(2026, 0, 1, Number(match[1]) - 7, Number(match[2]))));
+}
 
 const introController = createIntro({ intro: document.querySelector('#intro'), app: document.querySelector('#app'), status: document.querySelector('#intro-status'), retry: document.querySelector('#intro-retry') });
 THREE.DefaultLoadingManager.onLoad = () => introController.assetsReady();
 THREE.DefaultLoadingManager.onError = () => introController.fail();
 window.addEventListener('error', () => introController.fail(), { once: true });
 
-document.querySelector('#app').innerHTML = `<div id="scene"></div><div class="overlay"><div class="top"><div class="brand"><img class="game-logo" src="/logo-tttemple.webp" width="800" height="452" alt="TT Temple"><div><small>CHÙA CHUNG · HAI MÁI NHÀ</small></div></div><div class="top-actions"><button class="help-toggle" aria-expanded="true" aria-controls="welcome-guide">Hướng dẫn</button><button class="sound" aria-pressed="true">Âm thanh: bật</button><div class="badge">BẢN THỬ · 1 NGƯỜI</div></div></div><div class="card" id="welcome-guide"><div class="eyebrow">CHÀO MỪNG THÍ CHỦ</div><h1>Ghé chùa,<br>thảnh thơi.</h1><p>Một khoảng lặng chung của TTPC và T&amp;T Vina. Thí chủ có thể đi dạo, thắp hương, gõ mõ hay lắng nghe tiếng chuông.</p><p class="guide-control">Kéo cần tròn để đi, kéo khoảng trống để nhìn quanh. Trên máy tính, dùng phím mũi tên hoặc WASD.</p><div class="map-key"><span>← TTPC</span><span>CHÙA CHUNG ↑</span><span>T&amp;T VINA →</span></div></div><div class="notice" role="status"></div><div class="ritual" hidden><button></button><p></p></div><div class="bottom"><div class="hint"><strong>Khám phá không gian</strong>Phím mũi tên để đi · Kéo màn hình để xoay · WASD khi tắt UniKey</div><div class="controls" aria-label="Điều khiển di chuyển"><button class="up" data-key="up" aria-label="Đi lên">▲</button><button class="left" data-key="left" aria-label="Đi trái">◀</button><button class="down" data-key="down" aria-label="Đi xuống">▼</button><button class="right" data-key="right" aria-label="Đi phải">▶</button></div><div class="joystick" aria-label="Cần điều khiển di chuyển" role="application"><div class="joystick-ring"></div><div class="joystick-knob"></div></div></div></div>`;
+document.querySelector('#app').innerHTML = `<div id="scene"></div><div class="overlay"><div class="top"><div class="brand"><img class="game-logo" src="/logo-tttemple.webp" width="800" height="452" alt="TT Temple"></div><div class="top-actions"><button class="help-toggle" type="button" aria-label="Mở hướng dẫn" title="Hướng dẫn" aria-expanded="false" aria-controls="welcome-guide">?</button><button class="sound" type="button" aria-label="Tắt âm thanh" title="Âm thanh: bật" aria-pressed="true"><svg class="sound-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path class="sound-wave" d="M16 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/><path class="sound-mute" d="m16 9 5 6m0-6-5 6"/></svg></button></div></div><div class="card" id="welcome-guide" hidden><div class="eyebrow">CHÀO MỪNG THÍ CHỦ</div><h1>Ghé chùa,<br>thảnh thơi.</h1><p class="guide-control">Kéo cần để đi, kéo nền để nhìn quanh. Đến gần hương, chuông hoặc mõ để tương tác.</p></div><div class="notice" role="status"></div><div class="ritual" hidden><button></button></div><div class="bottom"><div class="controls" aria-label="Điều khiển di chuyển"><button class="up" data-key="up" aria-label="Đi lên">▲</button><button class="left" data-key="left" aria-label="Đi trái">◀</button><button class="down" data-key="down" aria-label="Đi xuống">▼</button><button class="right" data-key="right" aria-label="Đi phải">▶</button></div><div class="joystick" aria-label="Cần điều khiển di chuyển" role="application"><div class="joystick-ring"></div><div class="joystick-knob"></div></div></div></div>`;
 const welcomeGuide=document.querySelector('#welcome-guide'),helpToggle=document.querySelector('.help-toggle');
-let guideVisible=true;try{guideVisible=localStorage.getItem('tttemple-guide-seen')!=='1'}catch{}
-function setGuide(visible){guideVisible=visible;welcomeGuide.hidden=!visible;helpToggle.setAttribute('aria-expanded',String(visible))}
+let guideVisible=false;
+function setGuide(visible){guideVisible=visible;welcomeGuide.hidden=!visible;helpToggle.setAttribute('aria-expanded',String(visible));helpToggle.setAttribute('aria-label',visible?'Đóng hướng dẫn':'Mở hướng dẫn');helpToggle.title=visible?'Đóng hướng dẫn':'Hướng dẫn';document.querySelector('.overlay').classList.toggle('guide-open',visible)}
 setGuide(guideVisible);helpToggle.addEventListener('click',()=>setGuide(!guideVisible));
-function dismissGuideOnMove(){if(!guideVisible)return;setGuide(false);try{localStorage.setItem('tttemple-guide-seen','1')}catch{}}
+function dismissGuideOnMove(){if(guideVisible)setGuide(false)}
 const scene = new THREE.Scene(); scene.background = new THREE.Color('#b9d9e1'); scene.fog = new THREE.Fog('#c8ddd6', 38, 82);
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, .1, 100);
 const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'}); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setSize(innerWidth, innerHeight); renderer.outputColorSpace=THREE.SRGBColorSpace; document.querySelector('#scene').append(renderer.domElement);
-scene.add(new THREE.HemisphereLight('#fff5d7','#526747',2)); const sun=new THREE.DirectionalLight('#fff2d5',2); sun.position.set(-5,12,8); scene.add(sun);
+const dayBackground = new THREE.Color('#b9d9e1'), twilightBackground = new THREE.Color('#a98089'), nightBackground = new THREE.Color('#182237');
+const dayFog = new THREE.Color('#c8ddd6'), twilightFog = new THREE.Color('#9a8285'), nightFog = new THREE.Color('#34445a');
+const daySkyLight = new THREE.Color('#fff5d7'), twilightSkyLight = new THREE.Color('#f1b18f'), nightSkyLight = new THREE.Color('#b8c8e5');
+const dayGroundLight = new THREE.Color('#526747'), twilightGroundLight = new THREE.Color('#514247'), nightGroundLight = new THREE.Color('#293344');
+const daySunlight = new THREE.Color('#fff2d5'), twilightSunlight = new THREE.Color('#ffc28e'), nightMoonlight = new THREE.Color('#9fb5de');
+const hemisphere = new THREE.HemisphereLight(daySkyLight, dayGroundLight, 2); scene.add(hemisphere);
+const sun = new THREE.DirectionalLight(daySunlight, 2); sun.position.set(-5,12,8); scene.add(sun);
+const dayLightPosition = new THREE.Vector3(-5,12,8), nightLightPosition = new THREE.Vector3(15,20,-31);
+
+const moon = new THREE.Group();
+const moonDiskMaterial = new THREE.MeshBasicMaterial({ color: '#f1e9cc', transparent: true, opacity: 0, depthWrite: false, fog: false });
+const moonShadeMaterial = new THREE.MeshBasicMaterial({ color: '#182237', transparent: true, opacity: 0, depthWrite: false, fog: false });
+const moonDisk = new THREE.Mesh(new THREE.SphereGeometry(1.1, 20, 12), moonDiskMaterial);
+const moonShade = new THREE.Mesh(new THREE.SphereGeometry(1.03, 20, 12), moonShadeMaterial);
+moonShade.position.set(.58,.1,.14); moon.add(moonDisk, moonShade); moon.position.set(7,9.5,-31); scene.add(moon);
+
+const starPositions = new Float32Array(108 * 3);
+let starSeed = 20261119;
+function randomStarValue() { starSeed = (starSeed * 1664525 + 1013904223) >>> 0; return starSeed / 4294967296; }
+for (let i = 0; i < 108; i++) {
+  starPositions[i * 3] = (randomStarValue() - .5) * 56;
+  starPositions[i * 3 + 1] = 8.1 + randomStarValue() * 2.4;
+  starPositions[i * 3 + 2] = randomStarValue() * 52 - 44;
+}
+const starGeometry = new THREE.BufferGeometry(); starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+const starMaterial = new THREE.PointsMaterial({ color: '#e8edff', size: 2.7, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, fog: false });
+const stars = new THREE.Points(starGeometry, starMaterial); scene.add(stars);
+
+const lanterns = [];
+for (const x of [-3.5, 3.5]) {
+  const light = new THREE.PointLight('#ffd28a', 0, 10, 2); light.position.set(x,3.25,-3.7); scene.add(light);
+  const glowMaterial = new THREE.MeshBasicMaterial({ color: '#ffc66d', transparent: true, opacity: 0, depthWrite: false });
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), glowMaterial); glow.position.copy(light.position); scene.add(glow);
+  lanterns.push({ light, material: glowMaterial });
+}
+
+function applyTimeOfDay({ nightBlend, twilightBlend }) {
+  const blend = THREE.MathUtils.clamp(nightBlend, 0, 1);
+  const twilight = THREE.MathUtils.clamp(twilightBlend, 0, 1);
+  scene.background.copy(dayBackground).lerp(nightBackground, blend).lerp(twilightBackground, twilight);
+  scene.fog.color.copy(dayFog).lerp(nightFog, blend).lerp(twilightFog, twilight);
+  hemisphere.color.copy(daySkyLight).lerp(nightSkyLight, blend).lerp(twilightSkyLight, twilight);
+  hemisphere.groundColor.copy(dayGroundLight).lerp(nightGroundLight, blend).lerp(twilightGroundLight, twilight);
+  hemisphere.intensity = THREE.MathUtils.lerp(2, .82, blend);
+  sun.color.copy(daySunlight).lerp(nightMoonlight, blend).lerp(twilightSunlight, twilight);
+  sun.intensity = THREE.MathUtils.lerp(2, .48, blend);
+  sun.position.lerpVectors(dayLightPosition, nightLightPosition, blend);
+  moonShadeMaterial.color.copy(scene.background);
+  moonDiskMaterial.opacity = blend;
+  moonShadeMaterial.opacity = blend;
+  starMaterial.opacity = .8 * blend;
+  stars.visible = blend > .005;
+  for (const lantern of lanterns) {
+    lantern.light.intensity = 2.6 * blend;
+    lantern.material.opacity = .9 * blend;
+  }
+}
+
+applyTimeOfDay(readTimeOfDay());
 const mat=(color)=>new THREE.MeshStandardMaterial({color,roughness:1});
 const box=(w,h,d,color,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));m.position.set(x,y,z);scene.add(m);return m};
 const cyl=(r1,r2,h,color,x,y,z,n=12)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,n),mat(color));m.position.set(x,y,z);scene.add(m);return m};
@@ -46,18 +113,19 @@ for(const x of [-9,9]){box(7,.12,7,'#c8bea0',x,.04,5);box(4,.09,2,'#c8bea0',x<0?
 function sign(text,x){const canvas=document.createElement('canvas');canvas.width=768;canvas.height=192;const ctx=canvas.getContext('2d');ctx.fillStyle='#f0e4c5';ctx.fillRect(0,0,768,192);ctx.strokeStyle='#765b3c';ctx.lineWidth=8;ctx.strokeRect(8,8,752,176);ctx.fillStyle='#3b4d3d';ctx.textAlign='center';ctx.font='bold 72px sans-serif';ctx.fillText(text,384,119);const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;const mesh=new THREE.Mesh(new THREE.PlaneGeometry(3.4,.85),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));mesh.position.set(x,2.04,3.34);scene.add(mesh)}sign('TTPC',-9);sign('T&T VINA',9);
 for(const [x,url] of [[-9,ttpcLogo],[9,ttvinaLogo]]){new THREE.TextureLoader().load(url,texture=>{texture.colorSpace=THREE.SRGBColorSpace;const ratio=texture.image.width/texture.image.height;const logo=new THREE.Mesh(new THREE.PlaneGeometry(1.4*ratio,1.4),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));logo.position.set(x,1.04,3.35);scene.add(logo)})}
 for(const x of [-3.5,3.5]) tbox(.35,3.9,.35,'#8b4934',x,2.2,-3.8);
-const roof=tbox(15,.35,13,'#6e4232',0,5.05,-9.8);const roof2=tbox(15.6,.22,13.5,'#8e543c',0,5.3,-9.8);for(let x=-7.3;x<=7.3;x+=.35)tbox(.045,.09,13.4,'#b47751',x,5.44,-9.8);for(const x of [-7.6,7.6]){const finial=tbox(.15,.8,.3,'#c69a5e',x,5.55,-3.12);finial.rotation.z=x<0?-.45:.45}tbox(15.8,.18,.28,'#b78a55',0,5.14,-3.1);temple.position.y=.72;
+temple.add(createTempleRoof());temple.position.y=.72;
 for(let z= -1;z<11;z+=2)box(2.6,.03,1.5,'#dfd1ad',0,.16,z);
 function tree(x,z,s){cyl(.17*s,.25*s,2*s,'#6b5640',x,s,z);for(let i=0;i<3;i++){const a=new THREE.Mesh(new THREE.ConeGeometry((1.2-i*.2)*s,2*s,7),mat(i===1?'#506e52':'#607d59'));a.position.set(x,(2+i*.7)*s,z);scene.add(a)}}
 for(const [x,z,s] of [[13,-9,1.5],[-16,2,1.2],[16,3,1.3],[-15,12,1.1],[15,12,1.4],[-18,6,1.5],[18,0,1.6]])tree(x,z,s);
 const leaves=[];const leafGeometry=new THREE.PlaneGeometry(.18,.1),leafMaterial=new THREE.MeshBasicMaterial({color:'#c3b77d',side:THREE.DoubleSide});const leafTrees=[[-15,-12],[15,-12],[-15,11],[15,11]];for(let i=0;i<32;i++){const leaf=new THREE.Mesh(leafGeometry,leafMaterial),[tx,tz]=leafTrees[i%leafTrees.length];leaf.position.set(tx+(Math.random()-.5)*2,Math.random()*4+.4,tz+(Math.random()-.5)*2);leaf.rotation.set(Math.random()*3,Math.random()*3,0);leaf.userData.speed=.12+Math.random()*.12;leaf.userData.phase=Math.random()*6;leaf.userData.homeX=tx;scene.add(leaf);leaves.push(leaf)}
 const garden=createGarden(scene);
 const avatar=new THREE.Group();avatar.rotation.order='YXZ';const body=new THREE.Mesh(new THREE.CapsuleGeometry(.3,.65,4,8),mat('#a65c45'));body.position.y=.8;avatar.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.25,12,8),mat('#e2b896'));head.position.y=1.5;avatar.add(head);const robe=new THREE.Mesh(new THREE.ConeGeometry(.4,.85,12),mat('#a65c45'));robe.position.y=.65;avatar.add(robe);const scarf=new THREE.Mesh(new THREE.TorusGeometry(.21,.045,8,16,Math.PI),mat('#d7c6a1'));scarf.position.set(0,1.31,.02);scarf.rotation.x=Math.PI/2;avatar.add(scarf);avatar.position.set(0,0,8);scene.add(avatar);camera.position.set(0,8.1,19);camera.lookAt(0,1.1,8);
-const nameCanvas=document.createElement('canvas');nameCanvas.width=512;nameCanvas.height=128;const nameTexture=new THREE.CanvasTexture(nameCanvas);nameTexture.colorSpace=THREE.SRGBColorSpace;const nameTag=new THREE.Sprite(new THREE.SpriteMaterial({map:nameTexture,transparent:true,depthTest:false}));nameTag.scale.set(2.4,.6,1);nameTag.position.y=2.08;avatar.add(nameTag);function drawName(name){const ctx=nameCanvas.getContext('2d');ctx.clearRect(0,0,512,128);ctx.fillStyle='rgba(31,52,41,.85)';ctx.beginPath();ctx.roundRect(25,18,462,86,25);ctx.fill();ctx.font='bold 44px sans-serif';ctx.fillStyle='white';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(name,256,61,420);nameTexture.needsUpdate=true}drawName('Người chơi');
+const nameCanvas=document.createElement('canvas');nameCanvas.width=512;nameCanvas.height=128;const nameTexture=new THREE.CanvasTexture(nameCanvas);nameTexture.colorSpace=THREE.SRGBColorSpace;const nameTag=new THREE.Sprite(new THREE.SpriteMaterial({map:nameTexture,transparent:true,depthTest:false}));nameTag.scale.set(2.4,.6,1);nameTag.position.y=2.08;nameTag.visible=false;avatar.add(nameTag);function drawName(name){const ctx=nameCanvas.getContext('2d');ctx.clearRect(0,0,512,128);ctx.fillStyle='rgba(31,52,41,.85)';ctx.beginPath();ctx.roundRect(25,18,462,86,25);ctx.fill();ctx.font='bold 44px sans-serif';ctx.fillStyle='white';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(name,256,61,420);nameTexture.needsUpdate=true;nameTag.visible=Boolean(name.trim())&&name.trim()!=='Người chơi'}drawName('Người chơi');
 const mallet=new THREE.Group();const handle=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,.65,8),mat('#70472e'));handle.position.y=.32;mallet.add(handle);const malletHead=new THREE.Mesh(new THREE.SphereGeometry(.105,12,8),mat('#b69c72'));malletHead.position.y=.66;mallet.add(malletHead);mallet.position.set(.38,.9,.12);mallet.rotation.z=-.8;mallet.visible=false;avatar.add(mallet);
 const hood=new THREE.Mesh(new THREE.SphereGeometry(.27,12,8,0,Math.PI*2,0,Math.PI/2),mat('#a2a29b'));hood.position.y=1.53;hood.visible=false;avatar.add(hood);const veil=new THREE.Mesh(new THREE.BoxGeometry(.35,.45,.12),mat('#a2a29b'));veil.position.set(0,1.27,-.18);veil.visible=false;avatar.add(veil);
 const profile=document.createElement('div');profile.className='profile';profile.innerHTML=`<label>Tên người chơi <input class="player-name" maxlength="24" value="Người chơi" autocomplete="off"></label><label>Nhân vật <select class="player-kind"><option value="thay">Sư thầy</option><option value="co">Sư cô</option></select></label>`;document.querySelector('.overlay').append(profile);const playerName=profile.querySelector('input'),playerKind=profile.querySelector('select');playerName.addEventListener('input',()=>drawName(playerName.value.trim()||'Người chơi'));playerKind.addEventListener('change',()=>{const isNun=playerKind.value==='co',color=isNun?'#8d8c85':'#a65c45';body.material.color.set(color);robe.material.color.set(color);scarf.material.color.set(isNun?'#d9d7cd':'#d7c6a1');hood.visible=isNun;veil.visible=isNun});
-let firstPerson=false;const viewButton=document.createElement('button');viewButton.className='view-mode';viewButton.textContent='Góc nhìn: thứ ba';viewButton.setAttribute('aria-pressed','false');document.querySelector('.top-actions').prepend(viewButton);viewButton.addEventListener('click',()=>{firstPerson=!firstPerson;viewButton.textContent=firstPerson?'Góc nhìn: thứ nhất':'Góc nhìn: thứ ba';viewButton.setAttribute('aria-pressed',String(firstPerson));clearMovement()});
+profile.hidden=true;const profileToggle=document.createElement('button');profileToggle.className='profile-toggle icon-action';profileToggle.type='button';profileToggle.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>';profileToggle.setAttribute('aria-label','Mở nhân vật');profileToggle.title='Nhân vật';profileToggle.setAttribute('aria-expanded','false');profileToggle.setAttribute('aria-controls','player-profile');profile.id='player-profile';document.querySelector('.top-actions').prepend(profileToggle);profileToggle.addEventListener('click',()=>{if(guideVisible)setGuide(false);profile.hidden=!profile.hidden;profileToggle.setAttribute('aria-expanded',String(!profile.hidden));profileToggle.setAttribute('aria-label',profile.hidden?'Mở nhân vật':'Đóng nhân vật');profileToggle.title=profile.hidden?'Nhân vật':'Đóng nhân vật';if(!profile.hidden)clearMovement()});helpToggle.addEventListener('click',()=>{profile.hidden=true;profileToggle.setAttribute('aria-expanded','false');profileToggle.setAttribute('aria-label','Mở nhân vật');profileToggle.title='Nhân vật'});
+let firstPerson=false;const viewButton=document.createElement('button');viewButton.className='view-mode icon-action';viewButton.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.3-6 9.5-6 9.5 6 9.5 6-3.3 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>';viewButton.setAttribute('aria-label','Chuyển sang góc nhìn thứ nhất');viewButton.title='Góc nhìn thứ ba';viewButton.setAttribute('aria-pressed','false');document.querySelector('.top-actions').prepend(viewButton);viewButton.addEventListener('click',()=>{firstPerson=!firstPerson;viewButton.setAttribute('aria-label',firstPerson?'Chuyển sang góc nhìn thứ ba':'Chuyển sang góc nhìn thứ nhất');viewButton.title=firstPerson?'Góc nhìn thứ nhất':'Góc nhìn thứ ba';viewButton.setAttribute('aria-pressed',String(firstPerson));clearMovement()});
 const stations=[{id:'incense',name:'Thắp hương',x:-2.5,z:-1,color:'#ac7049',label:'Chạm để thắp một nén hương'},{id:'bell',name:'Gõ chuông',x:-4,z:1,color:'#a88a4b',label:'Chạm để gõ chuông'},{id:'fish',name:'Gõ mõ',x:4,z:1,color:'#9a5d3e',label:'Chạm để gõ mõ'},{id:'beads',name:'Lần tràng hạt',x:4,z:6,color:'#835b44',label:'Chạm để đếm một hạt'},{id:'door',name:'Mở cửa chùa',x:0,z:-4.1,label:'Chạm để mở cửa vào chùa'}];
 const ritualRings=new Map(), ritualPulses=new Map();
 for(const s of stations){if(s.id==='door')continue;cyl(.65,.8,.8,'#9f9279',s.x,.5,s.z);if(s.id==='incense'){cyl(.95,.65,.65,'#74634c',s.x,1.05,s.z,24);cyl(1.02,1.02,.12,'#a8936b',s.x,1.42,s.z,24);cyl(.88,.88,.03,'#756d5c',s.x,1.49,s.z,24)}else if(s.id!=='bell')cyl(.4,.35,.25,s.color,s.x,1,s.z);const ring=new THREE.Mesh(new THREE.RingGeometry(s.id==='incense'?1.2:.85,s.id==='incense'?1.26:.9,32),new THREE.MeshBasicMaterial({color:'#e5d29e',side:THREE.DoubleSide,transparent:true}));ring.rotation.x=-Math.PI/2;ring.position.set(s.x,.18,s.z);scene.add(ring);ritualRings.set(s.id,ring);ritualPulses.set(s.id,-Infinity)}
@@ -72,20 +140,24 @@ document.querySelectorAll('[data-key]').forEach(b=>{const release=e=>touchKeys.d
 function updateJoystick(e){const v=joystickVector(e.clientX,e.clientY,joystick.getBoundingClientRect());joystickX=v.x;joystickY=v.y;joystickKnob.style.transform='translate(calc(-50% + '+v.offsetX+'px), calc(-50% + '+v.offsetY+'px))'}
 joystick.addEventListener('pointerdown',e=>{if(joystickPointer!==null)return;e.preventDefault();joystickPointer=e.pointerId;joystick.setPointerCapture(e.pointerId);joystick.classList.add('active');updateJoystick(e)});joystick.addEventListener('pointermove',e=>{if(e.pointerId===joystickPointer){e.preventDefault();updateJoystick(e)}});for(const event of ['pointerup','pointercancel','lostpointercapture'])joystick.addEventListener(event,e=>{if(e.pointerId===joystickPointer)resetJoystick()});joystick.addEventListener('contextmenu',e=>e.preventDefault());
 let angle=0,pitch=0,drag=null;renderer.domElement.addEventListener('pointerdown',e=>{if(drag!==null)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};renderer.domElement.setPointerCapture(e.pointerId)});renderer.domElement.addEventListener('pointermove',e=>{if(drag!==null&&drag.id===e.pointerId){angle-=(e.clientX-drag.x)*.005;pitch=THREE.MathUtils.clamp(pitch-(e.clientY-drag.y)*.004,-.65,.8);drag={id:e.pointerId,x:e.clientX,y:e.clientY}}});for(const evt of ['pointerup','pointercancel','lostpointercapture'])renderer.domElement.addEventListener(evt,e=>{if(drag?.id===e.pointerId)drag=null});addEventListener('blur',()=>drag=null);document.addEventListener('visibilitychange',()=>{if(document.hidden)drag=null});
-const ritual=document.querySelector('.ritual'), button=ritual.querySelector('button'), desc=ritual.querySelector('p'), notice=document.querySelector('.notice');let active=null,timer,beads=0,storageAvailable=true;
+const ritual=document.querySelector('.ritual'), button=ritual.querySelector('button'), notice=document.querySelector('.notice');let active=null,timer,beads=0,storageAvailable=true;
 try{beads=Number(localStorage.getItem('tttemple-beads')||0)}catch{storageAvailable=false}if(!Number.isSafeInteger(beads)||beads<0)beads=0;
 const beadsDialog=document.createElement('dialog');beadsDialog.className='beads-dialog';beadsDialog.setAttribute('aria-labelledby','beads-title');beadsDialog.innerHTML=`<div class="beads-sheet"><div class="beads-header"><div><small>THỰC HÀNH CHÁNH NIỆM</small><h2 id="beads-title">Lần tràng hạt</h2></div><button class="beads-close" aria-label="Đóng tràng hạt">✕</button></div><p class="beads-instruction">Vuốt một lần, nhấc tay rồi tiếp tục.</p><div class="beads-loop" role="img" aria-label="Tràng hạt bằng gỗ"><div class="beads-cord"></div><div class="beads-count"><span>CHÁNH NIỆM</span><strong>0</strong><small>hạt đã lần</small></div><div class="beads-tassel" aria-hidden="true"><i></i><i></i><i></i></div></div><button class="beads-next">Lần một hạt</button><p class="beads-foot">Chạm nút hoặc vuốt hạt · Lưu trên trình duyệt này</p></div>`;document.body.append(beadsDialog);const loop=beadsDialog.querySelector('.beads-loop'),beadCount=beadsDialog.querySelector('.beads-count strong');for(let i=0;i<20;i++){const bead=document.createElement('span'),a=i*Math.PI*2/20;bead.className='bead';bead.style.left=`${50+37*Math.sin(a)}%`;bead.style.top=`${50-42*Math.cos(a)}%`;loop.append(bead)}beadCount.textContent=String(beads);beadsDialog.querySelector('.beads-close').addEventListener('click',()=>beadsDialog.close());beadsDialog.addEventListener('close',clearMovement);
-function countBead(){beads++;if(storageAvailable){try{localStorage.setItem('tttemple-beads',String(beads))}catch{storageAvailable=false}}beadCount.textContent=String(beads);beadsDialog.querySelector('.beads-foot').textContent=storageAvailable?'Chạm nút hoặc vuốt hạt · Lưu trên trình duyệt này':'Chỉ lưu trong phiên này';loop.classList.remove('advance');void loop.offsetWidth;loop.classList.add('advance');if(navigator.vibrate)navigator.vibrate(8)}beadsDialog.querySelector('.beads-next').addEventListener('click',countBead);let beadPointer=null;loop.addEventListener('pointerdown',e=>{if(beadPointer!==null)return;e.preventDefault();loop.setPointerCapture(e.pointerId);beadPointer=beginBeadSwipe(e.pointerId,e.clientY)});loop.addEventListener('pointermove',e=>{if(!beadPointer||beadPointer.pointerId!==e.pointerId)return;e.preventDefault();beadPointer=moveBeadSwipe(beadPointer,e.pointerId,e.clientY)});loop.addEventListener('pointerup',e=>{if(!beadPointer||beadPointer.pointerId!==e.pointerId)return;const shouldCount=finishBeadSwipe(beadPointer,e.pointerId,e.clientY);beadPointer=null;if(shouldCount)countBead()});for(const event of ['pointercancel','lostpointercapture'])loop.addEventListener(event,e=>{if(beadPointer?.pointerId===e.pointerId)beadPointer=null});beadsDialog.addEventListener('close',()=>{beadPointer=null});
+let beadRequestPending=false,pendingBeadOperation=null,beadRecordVersion=0;
+function renderBeadCount(value,label,advance=false){beads=value;beadCount.textContent=String(beads);beadsDialog.querySelector('.beads-foot').textContent=label;const beadElements=loop.querySelectorAll('.bead'),completed=beads===0?0:((beads-1)%beadElements.length)+1,activeIndex=beads===0?-1:(beads-1)%beadElements.length;loop.setAttribute('aria-label',`${beads} hạt đã lần`);for(let i=0;i<beadElements.length;i++){const bead=beadElements[i];bead.classList.toggle('passed',i<completed);bead.classList.toggle('current',i===activeIndex);bead.classList.remove('advance')}if(advance&&activeIndex>=0){const activeBead=beadElements[activeIndex];void activeBead.offsetWidth;activeBead.classList.add('advance')}}
+async function countBead(){if(beadRequestPending)return;if(localRoomMode){if(!localBeadStore){show('Kho tràng hạt thử local chưa kết nối');return}beadRequestPending=true;pendingBeadOperation ||= crypto.randomUUID();beadsDialog.querySelector('.beads-next').disabled=true;try{const result=await localBeadStore.record(pendingBeadOperation);pendingBeadOperation=null;beadRecordVersion++;renderBeadCount(result.total,'Đã lưu trong D1 thử local · dữ liệu giả',true)}catch{show('Chưa xác nhận được hạt. Bấm lại để thử cùng thao tác');beadsDialog.querySelector('.beads-foot').textContent='Chưa xác nhận · lần thử tiếp dùng cùng mã thao tác'}finally{beadRequestPending=false;beadsDialog.querySelector('.beads-next').disabled=false}}else{beads++;if(storageAvailable){try{localStorage.setItem('tttemple-beads',String(beads))}catch{storageAvailable=false}}renderBeadCount(beads,storageAvailable?'Chạm nút hoặc vuốt hạt · Lưu trên trình duyệt này':'Chỉ lưu trong phiên này',true)}if(navigator.vibrate)navigator.vibrate(8)}
+async function refreshLocalBeadCount(){if(!localBeadStore)return;const version=beadRecordVersion;try{const result=await localBeadStore.count();if(version===beadRecordVersion)renderBeadCount(result.total,'Đã lưu trong D1 thử local · dữ liệu giả')}catch{if(version===beadRecordVersion)beadsDialog.querySelector('.beads-foot').textContent='Kho D1 thử local chưa kết nối'}}
+beadsDialog.addEventListener('close',()=>{clearMovement();beadPointer=null});
+beadsDialog.querySelector('.beads-next').addEventListener('click',countBead);let beadPointer=null;loop.addEventListener('pointerdown',e=>{if(beadPointer!==null||beadRequestPending)return;e.preventDefault();loop.setPointerCapture(e.pointerId);beadPointer=beginBeadSwipe(e.pointerId,e.clientY)});loop.addEventListener('pointermove',e=>{if(!beadPointer||beadPointer.pointerId!==e.pointerId)return;e.preventDefault();beadPointer=moveBeadSwipe(beadPointer,e.pointerId,e.clientY)});loop.addEventListener('pointerup',e=>{if(!beadPointer||beadPointer.pointerId!==e.pointerId)return;const shouldCount=finishBeadSwipe(beadPointer,e.pointerId,e.clientY);beadPointer=null;if(shouldCount)countBead()});for(const event of ['pointercancel','lostpointercapture'])loop.addEventListener(event,e=>{if(beadPointer?.pointerId===e.pointerId)beadPointer=null});
 const mokugyoAudio=new Audio(mokugyoSound);mokugyoAudio.preload='auto';let audioContext,bellOutput,lastBellAt=-Infinity;
 const sanctuary=document.createElement('div');sanctuary.className='sanctuary-actions';sanctuary.hidden=true;sanctuary.innerHTML='<button class="bow">Lạy Phật</button><button class="meditate" aria-pressed="false">Ngồi thiền</button>';document.querySelector('.overlay').append(sanctuary);let meditating=false,bowingUntil=0;sanctuary.querySelector('.bow').addEventListener('click',()=>{if(meditating)return;clearMovement();avatar.rotation.y=Math.atan2(-avatar.position.x,-14.4-avatar.position.z);bowingUntil=performance.now()+1500;show('Cúi mình lạy Phật')});sanctuary.querySelector('.meditate').addEventListener('click',()=>{meditating=!meditating;clearMovement();if(meditating)avatar.rotation.y=Math.atan2(-avatar.position.x,-14.4-avatar.position.z);const b=sanctuary.querySelector('.meditate');b.textContent=meditating?'Đứng dậy':'Ngồi thiền';b.setAttribute('aria-pressed',String(meditating));show(meditating?'Hít thở nhẹ nhàng':'Đã đứng dậy')});
 async function playDoor(){if(!soundEnabled)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;audioContext ||=new C();if(audioContext.state==='suspended')await audioContext.resume();const t=audioContext.currentTime,osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.type='triangle';osc.frequency.setValueAtTime(125,t);osc.frequency.exponentialRampToValueAtTime(75,t+.3);gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.12,t+.02);gain.gain.exponentialRampToValueAtTime(.0001,t+.4);osc.connect(gain);gain.connect(audioContext.destination);osc.start(t);osc.stop(t+.4)}catch{show('Không phát được âm thanh cửa')}}
-let soundEnabled=true;const soundButton=document.querySelector('.sound');soundButton.addEventListener('click',()=>{soundEnabled=!soundEnabled;soundButton.setAttribute('aria-pressed',String(soundEnabled));soundButton.textContent=`Âm thanh: ${soundEnabled?'bật':'tắt'}`;if(!soundEnabled){mokugyoAudio.pause();if(audioContext)audioContext.suspend().catch(()=>{})}});
+let soundEnabled=true;const soundButton=document.querySelector('.sound');soundButton.addEventListener('click',()=>{soundEnabled=!soundEnabled;soundButton.setAttribute('aria-pressed',String(soundEnabled));soundButton.setAttribute('aria-label',soundEnabled?'Tắt âm thanh':'Bật âm thanh');soundButton.title=`Âm thanh: ${soundEnabled?'bật':'tắt'}`;soundButton.classList.toggle('muted',!soundEnabled);if(!soundEnabled){mokugyoAudio.pause();if(audioContext)audioContext.suspend().catch(()=>{})}});
 async function playRitualSound(kind){if(!soundEnabled)return;try{if(kind==='fish'){mokugyoAudio.currentTime=0;await mokugyoAudio.play();return}const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)throw Error('audio unsupported');audioContext ||= new AudioContextClass();if(audioContext.state==='suspended')await audioContext.resume();const now=audioContext.currentTime;if(now-lastBellAt<.3)return;lastBellAt=now;if(!bellOutput){bellOutput=audioContext.createDynamicsCompressor();bellOutput.threshold.value=-8;bellOutput.knee.value=4;bellOutput.ratio.value=16;bellOutput.attack.value=.003;bellOutput.release.value=.25;bellOutput.connect(audioContext.destination)}const tones=[[164,.22,8],[247,.12,7],[328,.08,6],[493,.04,4],[680,.025,2]];for(const [frequency,volume,duration] of tones){const oscillator=audioContext.createOscillator(),gain=audioContext.createGain();oscillator.type='sine';oscillator.frequency.setValueAtTime(frequency,now);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(volume,now+.03);gain.gain.exponentialRampToValueAtTime(.0001,now+duration);oscillator.connect(gain);const echo=audioContext.createDelay(1),echoGain=audioContext.createGain(),master=audioContext.createGain();master.gain.value=2.4;echo.delayTime.value=.28;echoGain.gain.value=.24;gain.connect(master);gain.connect(echo);echo.connect(echoGain);echoGain.connect(master);master.connect(bellOutput);oscillator.start(now);oscillator.stop(now+duration)}}catch{show('Không phát được âm thanh. Hãy kiểm tra âm lượng thiết bị.')}}
 function show(msg){notice.textContent=msg;notice.classList.add('visible');clearTimeout(timer);timer=setTimeout(()=>notice.classList.remove('visible'),2600)}
 const smokeCanvas=document.createElement('canvas');smokeCanvas.width=64;smokeCanvas.height=64;const smokeCtx=smokeCanvas.getContext('2d');const gradient=smokeCtx.createRadialGradient(32,32,0,32,32,32);gradient.addColorStop(0,'rgba(235,235,225,.45)');gradient.addColorStop(1,'rgba(235,235,225,0)');smokeCtx.fillStyle=gradient;smokeCtx.fillRect(0,0,64,64);const smokeTexture=new THREE.CanvasTexture(smokeCanvas),smoke=[];
 function lightIncense(s, synchronized = false){const x=synchronized?s.x:s.x+Math.random()*.5-.25,z=synchronized?s.z:s.z+Math.random()*.5-.25;const stick=cyl(.035,.035,1,'#86463c',x,1.94,z,6);const ember=new THREE.Mesh(new THREE.SphereGeometry(.055,8,6),new THREE.MeshBasicMaterial({color:'#e37b36'}));ember.position.set(x,2.46,z);scene.add(ember);const group=[];for(let i=0;i<7;i++){const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:smokeTexture,transparent:true,opacity:.4,depthWrite:false}));sprite.userData={x,z,phase:i/7};scene.add(sprite);group.push(sprite);smoke.push(sprite)}setTimeout(()=>{scene.remove(stick,ember);stick.geometry.dispose();stick.material.dispose();ember.geometry.dispose();ember.material.dispose();for(const sprite of group){scene.remove(sprite);sprite.material.dispose();const index=smoke.indexOf(sprite);if(index>=0)smoke.splice(index,1)}},30000)}
 const localRoomMode = import.meta.env.DEV && location.hostname === '127.0.0.1' && new URLSearchParams(location.search).get('phong-thu') === '1';
-if(localRoomMode)document.querySelector('.badge').textContent='PHÒNG THỬ LOCAL';
 function applyDoorState(open, announce = true) {
   const changed = doorOpen !== open;
   doorOpen = open;
@@ -103,19 +175,19 @@ function playAcceptedRitual(kind, ownAction) {
   ritualPulses.set(kind,performance.now());
   if(kind==='incense')lightIncense(station,true);
   else playRitualSound(kind);
-  if(ownAction){if(kind!=='incense')strikingUntil=performance.now()+350;show(kind==='incense'?'Thí chủ đã thắp một nén hương':kind==='bell'?'Thí chủ dừng lại một chút, lắng nghe tiếng chuông.':'Một nhịp mõ an yên')}
-  else show(kind==='incense'?'Một thí chủ vừa thắp hương':kind==='bell'?'Tiếng chuông vừa ngân trong sân chùa':'Một nhịp mõ vừa vang lên');
+  if(ownAction){if(kind!=='incense')strikingUntil=performance.now()+350;show(kind==='incense'?'Đã thắp hương':kind==='bell'?'Chuông ngân':'Mõ ngân')}
+  else show(kind==='incense'?'Có thí chủ thắp hương':kind==='bell'?'Chuông vừa ngân':'Mõ vừa vang');
 }
-function showRitualError(reason) { show(reason==='too_far'?'Thí chủ hãy đến gần đúng nơi hành lễ':reason==='rate_limited'?'Thí chủ hãy đợi một chút rồi thử lại':'Phòng thử chưa nhận được nghi lễ'); }
-button.addEventListener('click',()=>{if(!active)return;if(active.id==='beads'){clearMovement();beadsDialog.showModal()}else if(localRoomMode&&['incense','bell','fish'].includes(active.id)){if(!localRoom?.requestRitual(active.id))show('Phòng thử chưa kết nối.');return}else if(active.id==='incense'){lightIncense(active);show('Một nén hương đã được thắp')}else if(active.id==='door'){if(localRoomMode){if(!localRoom?.requestDoor(!doorOpen))show('Phòng thử chưa kết nối.');return}if(doorOpen&&Math.abs(avatar.position.z+3.9)<.55&&Math.abs(avatar.position.x)<1.5){show('Hãy đứng tránh cửa trước khi đóng');return}applyDoorState(!doorOpen)}else{strikingUntil=performance.now()+350;playRitualSound(active.id);show(active.id==='bell'?'Thí chủ dừng lại một chút, lắng nghe tiếng chuông.':'Một nhịp mõ an yên')}});
-const wayfinding=document.createElement('div');wayfinding.className='wayfinding';wayfinding.setAttribute('aria-live','polite');document.querySelector('.overlay').append(wayfinding);let lastGuide='';
-let localRoom;
+function showRitualError(reason) { show(reason==='too_far'?'Đến gần điểm hành lễ hơn':reason==='rate_limited'?'Đợi một chút rồi thử lại':'Phòng thử chưa nhận được nghi lễ'); }
+button.addEventListener('click',()=>{if(!active)return;if(active.id==='beads'){clearMovement();if(localRoomMode)void refreshLocalBeadCount();beadsDialog.showModal()}else if(localRoomMode&&['incense','bell','fish'].includes(active.id)){if(!localRoom?.requestRitual(active.id))show('Phòng thử chưa kết nối.');return}else if(active.id==='incense'){lightIncense(active);show('Đã thắp hương')}else if(active.id==='door'){if(localRoomMode){if(!localRoom?.requestDoor(!doorOpen))show('Phòng thử chưa kết nối.');return}if(doorOpen&&Math.abs(avatar.position.z+3.9)<.55&&Math.abs(avatar.position.x)<1.5){show('Đứng tránh cửa trước khi đóng');return}applyDoorState(!doorOpen)}else{strikingUntil=performance.now()+350;playRitualSound(active.id);show(active.id==='bell'?'Chuông ngân':'Mõ ngân')}});
+let localRoom,localBeadStore;
 const clock = new THREE.Clock();
 const upAxis = new THREE.Vector3(0, 1, 0);
 const movementDirection = new THREE.Vector3();
 const updateCamera = createCameraController(camera, nameTag);
 const guideCard = document.querySelector('.card');
 let lastStation = null, lastDoorOpen = doorOpen, firstFrameRendered = false;
+let nextTimeOfDayUpdate = 0;
 
 function updateRitual(station) {
   if (station === lastStation && (station?.id !== 'door' || doorOpen === lastDoorOpen)) return;
@@ -124,11 +196,16 @@ function updateRitual(station) {
   ritual.hidden = !station;
   if (!station) return;
   button.textContent = station.id === 'door' ? (doorOpen ? 'Đóng cửa chùa' : 'Mở cửa chùa') : station.name;
-  desc.textContent = station.id === 'door' ? (doorOpen ? 'Chạm để đóng cửa' : 'Chạm để mở cửa vào chùa') : station.label;
+  button.setAttribute('aria-label', station.id === 'door' ? (doorOpen ? 'Đóng cửa chùa' : 'Mở cửa chùa') : station.label);
 }
 
 function tick() {
   requestAnimationFrame(tick);
+  const frameNow = performance.now();
+  if (frameNow >= nextTimeOfDayUpdate) {
+    applyTimeOfDay(readTimeOfDay());
+    nextTimeOfDayUpdate = frameNow + 1000;
+  }
   const dt = Math.min(clock.getDelta(), .05);
   const movement = movementVector(Number(moving('right')) - Number(moving('left')), Number(moving('down')) - Number(moving('up')), joystickX, joystickY);
   if ((movement.x || movement.y) && !meditating && performance.now() >= bowingUntil) {
@@ -153,8 +230,6 @@ function tick() {
   mallet.visible = active?.id === 'bell' || active?.id === 'fish';
   mallet.rotation.z = performance.now() < strikingUntil ? -1.65 : -.8;
   updateRitual(active);
-  const guide = active ? '' : `Điểm gần nhất: ${found.nearest.name} · tiến lại gần để tương tác`;
-  if (guide !== lastGuide) { wayfinding.textContent = guide; wayfinding.hidden = !guide; lastGuide = guide; }
   localRoom?.update(dt);
   const pulseNow=performance.now();
   for(const [kind,startedAt] of ritualPulses){const ring=ritualRings.get(kind);if(!ring)continue;const progress=(pulseNow-startedAt)/650;ring.scale.setScalar(progress>=0&&progress<1?1+progress*2.2:1);ring.material.opacity=progress>=0&&progress<1?1-progress:.32}
@@ -180,4 +255,5 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 // Never included as an active production feature; opt-in only on local Vite.
 if (localRoomMode) {
   import('./multiplayer-dev.js').then(({ startLocalRoom }) => { localRoom = startLocalRoom(scene, () => avatar.position, clearMovement, applyDoorState, showDoorError, playAcceptedRitual, showRitualError); });
+  import('./beads-local.js').then(({ createLocalBeadStore }) => { localBeadStore=createLocalBeadStore();refreshLocalBeadCount() }).catch(() => show('Không tải được kho tràng hạt thử local'));
 }

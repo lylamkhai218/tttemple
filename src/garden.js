@@ -36,7 +36,21 @@ export function createGarden(scene) {
   for(const [x,z] of [[-15,-2],[15,-2],[-15,11],[15,11]])for(let i=0;i<5;i++){const dx=(i-2)*.24,height=2.4+(i%3)*.35;make(new THREE.CylinderGeometry(.045,.06,height,6),bamboo,x+dx,height/2,z+(i%2)*.2);const frond=make(new THREE.ConeGeometry(.38,.8,5),light,x+dx,height,z+(i%2)*.2);frond.rotation.z=dx*.7}
   // Taller bamboo beyond the wall sways gently as a single rooted clump.
   const bambooClumps=[],stemGeometry=new THREE.CylinderGeometry(.045,.065,1,6),leafGeometry=new THREE.ConeGeometry(.34,.8,5);
-  for(const [x,z] of [[-23,-17],[-23,-11],[-23,-5],[-23,1],[-23,7],[-23,13],[-23,19],[23,-17],[23,-11],[23,-5],[23,1],[23,7],[23,13],[23,19],[-17,23],[-11,23],[11,23],[17,23],[-15,-23],[-8,-23],[0,-23],[8,-23],[15,-23]]){const group=new THREE.Group();group.position.set(x,0,z);for(let i=0;i<4;i++){const h=3.4+(i%3)*.5,stem=new THREE.Mesh(stemGeometry,bamboo);stem.scale.y=h;stem.position.set((i-1.5)*.23,h/2,(i%2)*.2);group.add(stem);const leaves=new THREE.Mesh(leafGeometry,light);leaves.position.set(stem.position.x,h,stem.position.z);leaves.rotation.z=(i-1.5)*.2;group.add(leaves)}group.userData.phase=x*.3+z*.2;scene.add(group);bambooClumps.push(group)}
+  const bambooPositions=[[-23,-17],[-23,-11],[-23,-5],[-23,1],[-23,7],[-23,13],[-23,19],[23,-17],[23,-11],[23,-5],[23,1],[23,7],[23,13],[23,19],[-17,23],[-11,23],[11,23],[17,23],[-15,-23],[-8,-23],[0,-23],[8,-23],[15,-23]];
+  const instancePosition=new THREE.Vector3(),instanceScale=new THREE.Vector3(),instanceRotation=new THREE.Quaternion(),instanceMatrix=new THREE.Matrix4(),leafAxis=new THREE.Vector3(0,0,1);
+  for(const [x,z] of bambooPositions){
+    const group=new THREE.Group();group.position.set(x,0,z);
+    const stems=new THREE.InstancedMesh(stemGeometry,bamboo,4),leaves=new THREE.InstancedMesh(leafGeometry,light,4);
+    for(let i=0;i<4;i++){
+      const h=3.4+(i%3)*.5,offsetX=(i-1.5)*.23,offsetZ=(i%2)*.2;
+      instancePosition.set(offsetX,h/2,offsetZ);instanceScale.set(1,h,1);instanceRotation.identity();
+      instanceMatrix.compose(instancePosition,instanceRotation,instanceScale);stems.setMatrixAt(i,instanceMatrix);
+      instancePosition.set(offsetX,h,offsetZ);instanceScale.set(1,1,1);instanceRotation.setFromAxisAngle(leafAxis,(i-1.5)*.2);
+      instanceMatrix.compose(instancePosition,instanceRotation,instanceScale);leaves.setMatrixAt(i,instanceMatrix);
+    }
+    stems.instanceMatrix.needsUpdate=true;leaves.instanceMatrix.needsUpdate=true;
+    group.add(stems,leaves);group.userData.phase=x*.3+z*.2;scene.add(group);bambooClumps.push(group);
+  }
   const px=-12,pz=-9;const rim=make(new THREE.CylinderGeometry(3.5,3.5,.22,40),material('#a9aa8d'),px,.02,pz);const water=make(new THREE.CircleGeometry(3.25,40),new THREE.MeshStandardMaterial({color:'#5c9b94',roughness:.3,metalness:.1}),px,.15,pz);water.rotation.x=-Math.PI/2;
   const padGeometry=new THREE.CircleGeometry(.33,12),flowerGeometry=new THREE.ConeGeometry(.14,.23,8),flowerMaterials=[material('#f2b8be'),material('#f6d8dc')];
   for(let i=0;i<7;i++){const a=i*2.4,r=1.1+(i%3)*.55;const x=px+Math.cos(a)*r,z=pz+Math.sin(a)*r;const pad=make(padGeometry,green,x,.17,z);pad.rotation.x=-Math.PI/2;const flower=make(flowerGeometry,flowerMaterials[i%2],x,.28,z);flower.rotation.x=Math.PI}

@@ -140,3 +140,161 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 
 - Bổ sung kiểm tra quy tắc cho ba điểm nghi lễ, từ chối loại không hợp lệ, vị trí xa và giới hạn nhịp của người chơi và phòng. `pnpm test` đạt 43 bài; `pnpm build` thành công, cảnh báo gói JavaScript 528,57 kB. Các kiểm tra này chưa xác minh WebSocket, hiệu ứng hai tab hoặc âm thanh thiết bị.
 - P2 và P4/P5 vẫn chưa đạt; chưa triển khai thay đổi lên Cloudflare. Cần thử luồng phòng và thiết bị thật trước nghiệm thu.
+
+## 19/11/2026 - Nối giao diện tràng hạt vào POC D1 local
+
+- Chế độ `?phong-thu=1` gọi Worker local tại cổng 8797 cho lượt đọc và ghi hạt. Worker tự gắn danh tính giả `synthetic-local`, lấy giờ server để tính ngày Việt Nam, từ chối payload có trường thừa và dùng mã UUID làm khóa chống ghi trùng. Giao diện chỉ tăng tổng sau khi nhận kết quả từ D1; timeout thử tối đa ba lần với cùng mã và giữ mã đó trong bộ nhớ tab nếu vẫn chưa rõ kết quả.
+- Bài thử scheduled hiện có xóa dữ liệu trước khi chạy; hướng dẫn dùng một vùng lưu riêng cho kịch bản đó để không xóa số hạt của phiên game local. Không tạo database Cloudflare, không dùng danh tính thật.
+- `pnpm build` thành công, 27 module; bundle JavaScript 528,63 kB và còn cảnh báo trên 500 kB. Chưa chạy Worker, chưa kiểm tra request trình duyệt, hai tab, retry mạng, test suite hoặc thiết bị. P5 vẫn là POC chưa đạt; P2 chưa đạt, không đưa lên Cloudflare.
+
+## 19/11/2026 - Review lien phong va kiem tra P4-P6
+
+- Hai agent review doc lap theo vai tro senior tech va game artist. Day la review noi bo bang agent AI, khong phai danh gia cua chuyen gia nguoi that 30 nam hoac nghiem thu my thuat. Chi tiet o `specs/reviews/2026-11-19-cross-discipline.md`.
+- Tech xac nhan P1 con can xac minh CI va cau hinh Workers cho Vite tren commit hien tai; loc quoc gia khong phai dang nhap. P2 chua chot xac thuc/quota. P3 cho P2 va dau vao tai khoan. Khong mo cac tinh nang production phu thuoc xac thuc.
+- Artist giu dinh huong choi nhe sau cac cuoc tro chuyen kho voi khach hang. Uu tien silhouette mai chinh dien va khung anh Phat 2D co chu y; kiem tra khoang trong mobile, vuot trang hat va chat luong tren thiet bi truoc khi nghiem thu P6.
+- Trang nhan vat mac dinh an khi loi chao dang mo; mo panel nhan vat tu dong dong loi chao. Tren viewport browser 390 x 844, loi chao nam sau cum nut tren cung, chat thu an khi loi chao mo va trang thai phong dat duoi logo thay vi chong joystick.
+- P5 local: `renderBeadCount` chi danh dau/animate hat hien tai va hien tien trinh hoan thanh du 20 hat trong mot vong. Moi lan mo trang doc lai tong tu D1 local de dong bo so moi giua tab. Moi lan bam hoac mot lan vuot trong browser tao dung mot thao tac.
+- Bang chung local: Wrangler 4.164.0 tren cong 8796 (Durable Object phong thu) va 8797 (D1), Vite tren 5173, vung luu `.wrangler/beads-review-2026-11-19` tach rieng. Hai tab Vite cung may ket noi phong; giao dien bao 2 nguoi. D1 local tang tu 1 len 2 sau bam, tab hai doc 2 roi vuot mot lan len 3, tab mot mo lai doc 3. Gui lai cung operation ID qua API khong tao dong thu hai. Khong phai hai thiet bi, Cloudflare D1 da deploy hay retry tren mang that.
+- `pnpm test` dat 43 bai; `pnpm build` thanh cong voi 27 module. Bundle game chinh 529,44 kB, con canh bao Vite tren 500 kB. Build production khong chua `127.0.0.1:8797`, `beads-local` hoac `synthetic-local`. Day chua phai so do FPS hoac Lighthouse.
+- Lighthouse CLI va MCP performance trace khong co san; khong tao score hay Core Web Vitals gia lap. Chua co nghiem thu iPhone/Android. Da dung toan bo server local; khong deploy, commit hoac push.
+
+## 19/11/2026 - Dinh chinh cach trinh bay muc review
+
+- Muc `Review lien phong va kiem tra P4-P6` ngay truoc bi thieu dau tieng Viet do loi nhap lieu. Giu nguyen muc do theo quy tac append-only. Ban doc co dau va cung bang chung review nam trong `specs/reviews/2026-11-19-cross-discipline.md`; trang thai phase duoc cap nhat trong `specs/tasks-and-gates.md` va `HANDOFF.md`.
+
+## 19/11/2026 - Bổ sung xác minh P1 qua Cloudflare API
+
+- Cloudflare API read-only lúc 03:06 UTC xác nhận Worker `tttemple-vite-test` có assets, `workers.dev` bật, Preview URLs tắt, không có custom route; phiên bản mới nhất `d31f763e-ccb5-42b0-95dd-e9736cc9de00` nhận 100% traffic và được deploy bằng Wrangler ngày 18/11. Cấu hình hiện nằm tại `poc/vite-preview/wrangler.jsonc`, Worker chỉ cho request có `request.cf.country === 'VN'`.
+- Đính chính phạm vi review trước đó: cấu hình Workers cho Vite đã có và bản thử đang chạy; phần chưa xác minh là CI cho commit `d17ad53`, quy trình deploy/rollback từ GitHub và kiểm tra từ IP ngoài Việt Nam. Lọc quốc gia vẫn không phải đăng nhập.
+- Yêu cầu đọc trạng thái CI commit hiện tại qua GitHub connector lỗi transport; không có bằng chứng CI mới. Không thay đổi Worker hay traffic.
+
+## 19/11/2026 - Sửa ô tên mobile và bố cục landscape
+
+- Tăng cỡ chữ tên/chọn nhân vật trên mobile lên 16px để tránh cơ chế tự phóng to khi focus trên Safari iOS, giữ viewport không khóa phóng to trợ năng và tăng chiều cao vùng chạm tối thiểu lên 44px. Thêm bố cục ngang màn hình thấp, tính safe area, thu gọn logo và nút, đặt panel nhân vật ở góc phải; điều khiển cảm ứng dùng joystick hiện có theo media query coarse pointer.
+- Đã quan sát giao diện local ở viewport 390 x 844 và 844 x 390. Ô tên là 16px/cao 44px; cảnh game phủ khung ngang, logo và hành động không chồng lên nhau. Đây là kiểm tra browser desktop bằng viewport, không phải thiết bị thật hoặc kiểm chứng hành vi Safari.
+- `pnpm build` đạt, 27 module; bundle game 529,51 kB (gzip 138,31 kB), còn cảnh báo Vite trên 500 kB. Chưa chạy `pnpm test`, không triển khai, commit hoặc push. Cần xác minh bàn phím, zoom focus, notch/safe area và joystick trên iPhone/Android thật trước khi đóng P6.
+
+## 19/11/2026 - Điều tra báo lỗi không vào được game trên iPhone Safari
+
+- Nguồn là ảnh người dùng ghi nhận 23:00 ngày 18/11/2026, tương ứng 16:00 UTC. Màn hình fallback là chuỗi riêng trong `src/boot.js`, được đặt khi `import('./main.js')` reject; điều này xác định lỗi ở tải hoặc khởi tạo module client, không xác định exception cụ thể. Game hiện chưa có join phòng production.
+- Cloudflare API: deployment đang chạy `d31f763e-ccb5-42b0-95dd-e9736cc9de00` được tạo 14:38:59 ICT ngày 18/11, không có deployment quanh 23:00. Workers GraphQL metrics khung 22:55-23:05 ghi 139 request và 139 subrequest ASSETS, 0 lỗi runtime; riêng 23:00 có 54 request/subrequest và 0 lỗi. Đây là số tổng hợp cho Worker, không gắn với user và không cung cấp HTTP status.
+- Settings của script trả `observability: null`, `logpush: false`; Workers Observability query không có event trong khung incident. Vì thế không lấy được console/error stack phía client. Worker chặn quốc gia trước khi gọi ASSETS; mọi invocation có subrequest trong thống kê đi tiếp tới ASSETS, nên không có bằng chứng bộ lọc quốc gia là nguyên nhân của các request được thống kê.
+- Mã dựng `THREE.WebGLRenderer` ở đầu `src/main.js`; Three.js r180 chỉ hỗ trợ WebGL 2. Context không tạo được có thể làm dynamic import reject. Đây là giả thuyết phù hợp nhưng chưa được chứng minh; Safari/WebKit có hỗ trợ WebGL 2 từ Safari 15, còn iOS version và model của máy báo lỗi chưa biết. Thử bản live qua Chromium desktop thành công, không thay thế thiết bị iOS.
+- Không thay đổi mã, không bật logging, không deploy. Cần model/iOS version, WebGL 2 check và console/network capture trên máy thật để chốt nguyên nhân; nếu tái hiện cần lấy HTTP status của JS chunk.
+
+## Bằng chứng cục bộ 19/11/2026 - Thu gọn HUD màn chơi
+
+- Rà mã giao diện thấy lời chào lớn tự hiện lần đầu; phần hướng dẫn, chỉ đường tới điểm tương tác, chú thích logo, nhãn phiên bản, tên mặc định và mô tả phụ của nút nghi lễ cùng chiếm màn hình hoặc lặp nội dung. Đã ẩn hướng dẫn mặc định và cho mở bằng nút `?`; rút gọn header thành nút biểu tượng 44px có aria-label/title; bỏ chỉ đường cố định, nhãn mặc định trên avatar, mô tả lặp và phụ đề logo; thu ngắn toast nghi lễ. Trạng thái phòng local vẫn có nội dung cho trình đọc màn hình nhưng không chiếm diện tích nhìn.
+- Giữ nút hành động nghi lễ theo ngữ cảnh khi đến gần điểm tương tác; nội dung hướng dẫn ngắn còn trong panel trợ giúp. Không thay đổi màn intro.
+- `pnpm build` đạt, 27 module; bundle game 529,78 kB (gzip 138,21 kB), tiếp tục cảnh báo Vite trên 500 kB. `git diff --check` không phát hiện lỗi whitespace; PowerShell báo chuyển đổi LF/CRLF dự kiến cho các file đã sửa.
+- Không kiểm tra hình ảnh trong browser vì môi trường không cho mở socket localhost; không chạy test suite, không deploy, commit hoặc push. Bản build xác nhận cú pháp/đóng gói, không thay thế kiểm tra viewport hay iPhone/Android thật. P6 vẫn chưa đạt.
+
+## Bằng chứng cục bộ 19/11/2026 - P1 CI/rollback và P6 mái chùa
+
+- GitHub API read-only: Actions run `44264957288` hoàn tất thành công cho branch `progress/2026-11-18`, commit `d17ad530a750f1c654e9c6de07246b34baa01bc0`. Workflow `.github/workflows/ci.yml` chỉ chạy `pnpm test` và `pnpm build`; chưa deploy.
+- Cloudflare API read-only cho Worker `tttemple-vite-test`: version `d31f763e-ccb5-42b0-95dd-e9736cc9de00` nhận 100% traffic; version trước là `b8bdbac0-119f-4c81-89fb-b00a1aedadf6`, có tổng cộng 8 versions trong danh sách. Không thay đổi cấu hình hoặc traffic.
+- Wrangler local 4.164 `rollback --help` và tài liệu Cloudflare xác nhận rollback lập tức tạo deployment mới trỏ 100% traffic tới version chọn. Đã thêm runbook `poc/vite-preview/README.md`; không chạy lệnh rollback. P1 còn thiếu quy trình deploy qua GitHub và kiểm tra bằng IP ngoài Việt Nam thực tế. P6 vẫn độc lập để tiếp tục.
+- P6: thay mái phẳng bằng custom low-poly roof mesh có mặt cong và góc mái vút lên; thêm các đường gờ thưa; thêm viền gỗ vàng nổi quanh ảnh Phật. Cụm mái giảm từ 47 mesh xuống 12 mesh theo mã nguồn; chưa đo FPS/draw calls.
+- `pnpm build` đạt với 28 module; bundle game 530,81 kB (gzip 138,60 kB), còn cảnh báo Vite trên 500 kB. Không xem được bản local trong browser ở môi trường hiện tại; không chạy test suite, không deploy, rollback, commit hoặc push. P1 và P6 vẫn chưa nghiệm thu.
+
+## 19/11/2026 - Bật Workers Observability và rà Logpush
+
+- Lý do trước đó chưa bật: mục điều tra incident ngày 19/11 ghi nhận logging đã hoãn tới khi đánh giá chi phí và mức thu thập dữ liệu. Sau khi kiểm tra tài liệu Cloudflare, Workers Logs/Traces trên Free không tính phí trước 01/12/2026; từ ngày đó Free có 0,5 GB ingestion/ngày, lưu 7 ngày, không tính phí vượt mức mà dừng ingestion khi chạm hạn mức. Workers Logs hiện có hạn mức 200.000 event/ngày và lưu 3 ngày tới hết 30/11. Nguồn: https://developers.cloudflare.com/observability/pricing/ và https://developers.cloudflare.com/workers/observability/logs/workers-logs/.
+- Ngày 19/11 bật Workers Observability qua Cloudflare API cho `tttemple-vite-test` và `tttemple-auth-poc`: Logs enabled, invocation logs enabled, persist, sampling 100%; Traces enabled, persist, sampling 10%; `redact_query_string: true`. GET xác minh lại cùng cấu hình trên cả hai script. Đây là cập nhật cấu hình account từ xa, không sửa mã hoặc deploy Worker.
+- Truy vấn Workers Observability API khoảng 03:34-04:04 UTC ngày 19/11 chạy thành công nhưng không trả event; vì vậy chỉ xác nhận cài đặt đã bật, chưa xác minh ingestion bằng request mới. Các log cũ của incident Safari lúc 16:00 UTC ngày 18/11 không thể khôi phục hồi tố.
+- Cloudflare API trả `logpush:false` cho cả hai Worker; account không có Logpush job hoặc Workers Observability destination. Workers Trace Events Logpush chỉ dùng được trên Workers Paid và tính theo request; không nâng cấp plan, tạo destination, bật dịch vụ lưu trữ trả phí hoặc thay đổi billing. Nguồn: https://developers.cloudflare.com/workers/platform/pricing/#workers-trace-events-logpush.
+- Kết luận: Logs và Traces đã bật để hỗ trợ sự cố tiếp theo, P7 chưa đạt đến khi xác minh event sau request mới và chốt quy trình dashboard/owner. Logpush chưa bật do giới hạn Workers Free và chưa có destination; cần Workers Paid và nơi nhận log để triển khai loại Worker Trace Events Logpush.
+
+## 19/11/2026 - P6 giảm payload texture cảnh game
+
+- Đổi import texture trong `src/main.js` sang WebP cho ảnh Phật, logo TTPC và logo T&T Vina. Giữ nguyên các PNG nguồn. Kích thước lần lượt: PNG 980.823 / 346.111 / 21.069 byte; WebP 57.164 / 70.698 / 20.440 byte. Tổng giảm từ 1.348.003 xuống 148.302 byte, tiết kiệm 1.199.701 byte, xấp xỉ 89%.
+- Mở trực quan các bản WebP sau chuyển đổi: bố cục, màu và chi tiết chính nhìn vẫn nguyên ở ảnh Phật và hai logo; không giảm độ phân giải (600x800, 1200x800, 1000x620). Vì intro đợi texture của cảnh, giảm payload này có thể rút ngắn thời gian tải ảnh trước khi mở cảnh; chưa đo độ trễ mạng hay LCP thực tế.
+- `pnpm build` thành công, 28 module. Ba texture trong output là 148,30 kB tổng; JavaScript `main` còn 530,81 kB (gzip 138,60 kB) và Vite vẫn cảnh báo chunk trên 500 kB; âm thanh WAV còn 322,32 kB. Không có Lighthouse/Core Web Vitals tool trong môi trường; không chạy test suite, không xem browser/điện thoại, không deploy, commit hoặc push. P6 chưa nghiệm thu.
+
+## 19/11/2026 - Chuẩn bị deploy P1 từ GitHub vào Worker thử
+
+- Tài liệu Cloudflare xác nhận `wrangler preview` tạo branch Preview riêng, nhưng Preview URL công khai mặc định và thiết lập Workers.dev Preview URL cần được bật. Để không mở thêm hostname hoặc đổi thiết lập production trong lượt này, chọn workflow thủ công nhắm Worker thử đã có `tttemple-vite-test`; job buộc chạy trên nhánh `progress/2026-11-18`, mặc định `SKIP`, chỉ deploy khi chọn `DEPLOY_PREVIEW`.
+- Tạo `.github/workflows/deploy-preview.yml`: setup pnpm 11.15.1/Node 24, cài theo lockfile, dùng test và build hiện có, chạy `wrangler deploy --dry-run` trước `wrangler deploy`; token và account ID lấy từ GitHub Actions secrets. Workflow chưa commit/push/chạy, secrets chưa xác minh. Khi chạy, `wrangler deploy` đặt version mới vào 100% traffic của Worker thử, không phải thao tác vô hại; rollback đổi traffic ngay.
+- Thêm cấu hình Observability Logs/Traces vào `poc/vite-preview/wrangler.jsonc` với cùng sampling và che query string như settings đã xác minh qua API, để lần deploy qua Wrangler không làm lệch cấu hình khai báo.
+- Wrangler 4.164.0 local `deploy --dry-run --config poc/vite-preview/wrangler.jsonc` đọc 16 asset trong `dist`, nhận binding `ASSETS`, tổng Worker upload 0,51 KiB và thoát ở chế độ dry-run. Công cụ báo không ghi được file log dưới AppData do sandbox quyền, nhưng vẫn hoàn tất gói; không gọi Cloudflare API, không deploy.
+- Không chạy workflow/test suite, không đổi GitHub secrets, traffic hay Cloudflare resource, không commit/push. P1 vẫn chưa đạt đến khi workflow được push/chạy, secrets được cấp, kết quả Worker thử được kiểm tra và IP ngoài Việt Nam được xác minh. Nguồn cấu hình: https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/ và https://developers.cloudflare.com/workers/previews/.
+
+## 19/11/2026 - P2 đánh giá hướng xác thực trong giới hạn Free
+
+- Đối chiếu POC hiện có với tài liệu Cloudflare và OWASP. Workers Free giới hạn 10 ms CPU mỗi HTTP request/Cron Trigger; mẫu scrypt tổng hợp đã ghi nhận 250 ms CPU, nên không phù hợp mức giới hạn này. PBKDF2-HMAC-SHA-256 600.000 vòng vẫn bị Workers Web Crypto từ chối. Không giảm mức băm hoặc đánh dấu P2 đạt từ một mẫu.
+- API GET danh sách Access applications ngày 19/11 trả `access.api.error.not_enabled`. Không bật Zero Trust, thay billing, hay tạo cấu hình Access. Access/IdP cần định danh email/SSO và mapping tài khoản; không tương thích trực tiếp với luồng mật khẩu tạm hiện tại.
+- Ghi ma trận và đề xuất trong `specs/p2-auth-assessment.md`: nếu giữ Workers Free và không thêm billing, thử passkey/WebAuthn bằng tài khoản giả là hướng đáng nghiên cứu; đây là đề xuất cần duyệt vì thay đổi AP. ECDSA fixture hiện có không phải WebAuthn và không chứng minh CPU/độ an toàn đầu-cuối.
+- Không chạy benchmark/deploy hoặc test suite trong lượt đánh giá này; không sửa Worker từ xa. P2 vẫn chưa đạt; P1 không chặn P2, còn P3 và tích hợp tính năng chờ cổng P2.
+- Nguồn: https://developers.cloudflare.com/workers/platform/limits/ ; https://developers.cloudflare.com/workers/configuration/cloudflare-access/ ; https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html ; https://www.w3.org/TR/webauthn-3/.
+
+## 19/11/2026 - P2 POC WebAuthn và phép đo Cloudflare không có telemetry
+
+- Nối tiếp đánh giá P2, tạo POC cô lập tại `poc/auth/webauthn/` bằng SimpleWebAuthn 14.1.0/14.0.0. Tài khoản, công ty, role và state đều giả; challenge/session ở bộ nhớ đơn tiến trình. `npm test --prefix poc/auth/webauthn` đạt 5 bài; Vite production build và Wrangler `deploy --dry-run` đạt. Chưa dùng authenticator thật, không nối vào game và không đổi AP.
+- Deploy benchmark ECDSA với public key/challenge/signature tổng hợp lên `tttemple-auth-poc`, version `3fe65bba-0fd2-40bf-a4c2-ce4ba321cb51`, đặt cron mỗi phút trong khoảng thử. Truy vấn Workers Observability đã lọc chính xác `$metadata.service=tttemple-auth-poc` nhưng trả 0 event; không có bằng chứng về số trigger, CPU time, wall time hoặc outcome. Không chạy truy vấn account-wide.
+- Xóa cron và deploy Worker idle version `44843bd1-b78d-4a09-814f-cd0a36e3b8b0`. GET xác nhận `schedules: []`, workers.dev/preview tắt, bindings rỗng; Logs/Traces vẫn bật với cấu hình hiện có. Không sửa Worker game, thêm billing hoặc bật Access.
+- Kết luận P2 vẫn chưa đạt. Phép thử local chứng minh luồng POC và kiểm tra mã, không chứng minh xác thực production; phép đo ECDSA từ xa không có kết quả. Cần lấy được telemetry bằng truy vấn lọc, hoàn thiện state bền vững, thử authenticator/iOS, review bảo mật và được duyệt thay đổi AP trước khi triển khai.
+- Nguồn kỹ thuật: https://simplewebauthn.dev/docs/packages/server ; https://simplewebauthn.dev/docs/packages/browser ; https://developers.cloudflare.com/workers/observability/ ; https://developers.cloudflare.com/workers/platform/limits/.
+
+## 19/11/2026 - P6 giảm dung lượng tiếng mõ
+
+- Giữ `src/assets/mokugyo.wav` làm bản nguồn CC0; tạo `src/assets/mokugyo.mp3` bằng FFmpeg/libmp3lame, stereo 44,1 kHz, 192 kbit/s. Cập nhật game dùng MP3 và ghi rõ nguồn/cách chuyển đổi trong `src/assets/SOUNDS.md`.
+- `ffprobe` xác nhận MP3 dài 1,827 giây, 44,1 kHz, 2 kênh; kích thước 45.182 byte so với WAV 322.320 byte, giảm 277.138 byte (86,0%). `pnpm build` đạt, 28 module và đóng gói MP3 ở 45,18 kB. JavaScript game giữ nguyên 530,81 kB (gzip 138,60 kB), Vite vẫn cảnh báo chunk trên 500 kB.
+- Chưa đo thời gian tải thực, Lighthouse, FPS hoặc nghe nghiệm thu trên Safari/iPhone/Android; môi trường không có MCP trace hiệu năng. Không chạy test suite, không deploy, commit hoặc push. P6 tiếp tục chưa đạt; tối ưu âm thanh chỉ xử lý một asset tải cùng game.
+
+## 19/11/2026 - P7 xác minh Workers Logs ingestion
+
+- Cloudflare API xác nhận `tttemple-vite-test` có workers.dev bật, route qua ASSETS, Logs persist/sample 100%, Traces persist/sample 10% và redaction query string. Không đổi cấu hình trong phép thử.
+- Mở một lần trang bản thử bằng browser in-app. Query Workers Observability `view=invocations`, lọc chính xác `$metadata.service=tttemple-vite-test`, trả 10 log invocation mức `info` cho GET trang và asset tại thời điểm 07:29 UTC; không đọc hoặc đưa query string vào báo cáo. Bằng chứng xác nhận Logs ingestion. Worker đang phục vụ version `d31f763e-ccb5-42b0-95dd-e9736cc9de00`; log cho thấy bản triển khai này vẫn tải WAV và PNG cũ, nên thay đổi P6 mới ở checkout chưa được deploy.
+- Truy vấn `view=traces` đã lọc theo đúng Worker nhưng không trả trace trong mẫu đã thu; với trace sampling 10%, chưa đủ cơ sở kết luận trace ingestion bị lỗi. `logpush:false`; tài liệu Cloudflare xác nhận Workers Trace Events Logpush chỉ có trên Workers Paid, account hiện Free. Không bật billing hoặc tạo destination.
+- Kết luận P7 tiến triển một phần: Logs đã xác minh, Traces và quy trình dashboard/owner còn mở. Không truy vấn log account-wide, không đổi deployment hoặc traffic. Nguồn: https://developers.cloudflare.com/workers/observability/logs/logpush/ ; https://developers.cloudflare.com/workers/platform/pricing/.
+
+## 19/11/2026 - P7 truy vết thêm mẫu Traces
+
+- Mở thêm hai lượt trang thử bằng browser in-app, nâng mẫu lên 25 invocation log trong giờ gần nhất. Query đã lọc theo `$metadata.service=tttemple-vite-test`; 25 sự kiện `cf-worker-event` mức `info` có trace ID.
+- Truy vấn Traces lọc đúng Worker, sau đó đối chiếu trực tiếp các trace ID trong phạm vi dữ liệu đó, đều trả 0 trace. Đây là bằng chứng Logs ingestion hoạt động và Traces chưa quan sát được trong mẫu; sample rate cấu hình 10%, nên chưa thể kết luận hệ thống Traces lỗi.
+- GET xác nhận cấu hình vẫn nguyên trạng: Logs enabled/persist/sample 100%, Traces enabled/persist/sample 10%, redaction query string bật; workers.dev bật, preview URL tắt, lịch rỗng, `logpush:false`. Không sửa cấu hình, deployment hoặc traffic.
+- P7 chưa đạt nghiệm thu Traces và quy trình dashboard/owner. Logpush cho Workers Trace Events vẫn không khả dụng trên Workers Free theo tài liệu Cloudflare; không nâng cấp billing hoặc tạo nơi nhận log. Nguồn: https://developers.cloudflare.com/workers/observability/traces/ ; https://developers.cloudflare.com/workers/observability/logs/logpush/.
+
+## 19/11/2026 - P7 soạn runbook quan sát
+
+- Tạo `docs/observability-runbook.md` với trạng thái cấu hình đã xác minh, cách truy vấn đúng Worker, cách xử lý khi thiếu event, quy tắc không log dữ liệu nhạy cảm và giới hạn Logpush hiện tại.
+- Runbook ghi owner vận hành và incident response đang chờ chỉ định; đây là tài liệu dự thảo, chưa phải quyết định phân công. P7 vẫn chưa đạt vì chưa thấy trace trong các mẫu và chưa có owner. Không đổi cấu hình Cloudflare.
+
+## 19/11/2026 - P6 thiết kế và lịch night mode
+
+- Thêm `src/time-of-day.js` để tính chuyển ngày - đêm theo múi giờ `Asia/Ho_Chi_Minh`: hoàng hôn 18:00-19:00, đêm 19:00-04:00, bình minh 04:00-05:00. Smoothstep làm chậm chuyển màu ở đầu/cuối; cảnh lấy mẫu mỗi giây.
+- Cập nhật `src/main.js`: màu trời/sương và ánh sáng chuyển giữa ngày, chạng vạng ấm, đêm xanh chàm; trăng lưỡi liềm và 108 sao mờ theo thời gian; hai đèn vàng nhỏ gần chính điện. Giữ nguyên HUD và thao tác chơi. Đặc tả và checklist nghiệm thu ở `specs/night-mode-design.md`.
+- `pnpm build` đạt ngày 19/11/2026 với 29 module. JavaScript game 535,58 kB (gzip 140,12 kB), tăng 4,77 kB raw so với build 530,81 kB trước đó; Vite tiếp tục cảnh báo chunk trên 500 kB. Build chỉ xác nhận biên dịch/đóng gói, không phải kiểm tra hình ảnh hoặc FPS.
+- Chưa xem browser local, chưa chạy Lighthouse, chưa nghiệm thu Safari iOS/Android, chưa deploy hay kiểm tra giờ biên trên thiết bị. P6 tiếp tục chưa đạt; nguồn bằng chứng là mã nguồn và output build cục bộ.
+
+## 19/11/2026 - P6 kiểm tra night mode và chỉnh bầu trời
+
+- Thêm `tests/time-of-day.test.js` cho giờ ngày/đêm ICT, bốn mốc chuyển tiếp, tiến trình hoàng hôn/bình minh và ngày không hợp lệ. `pnpm test` đạt 52/52; `pnpm build` đạt 29 module, JavaScript game 535,66 kB (gzip 140,19 kB), cảnh báo chunk trên 500 kB vẫn còn.
+- Dùng query dev-only `?clock=HH:mm` để dựng lại giờ 12:00, 18:30, 23:00 và 04:30 trong preview. Search output `dist/assets` không thấy `previewClock` hoặc `?clock`, xác nhận điều khiển preview bị loại khỏi production build.
+- Browser in-app đã hiển thị local game ở desktop 1280x720, viewport giả lập dọc 390x844 và ngang 844x390. Dusk/dawn chuyển ấm; ban đêm còn đọc được sân và HUD. Console không có error/warning trong mẫu đã thu. Khi camera ngẩng, ảnh đầu cho thấy trăng bị cắt ở mép trên và sao dồn thành dải; hạ trăng xuống, phân bố lại 108 sao bằng seed xác định. Ảnh sau sửa thấy trăng/sao gọn trong phần trời.
+- Góc camera mặc định hướng xuống sân nên thiên thể chỉ thấy khi kéo góc nhìn lên; đây là giới hạn bố cục hiện tại cần cân nhắc trong review, không thay góc vào game trong lượt này. Viewport browser không phải iPhone/Android thật. Chưa đo FPS/Lighthouse, chưa deploy; P6 vẫn chưa đạt.
+
+## 19/11/2026 - P7 xác nhận Traces ingestion trên Worker thử
+
+- Cloudflare API read-only ngày 19/11 xác nhận cấu hình `tttemple-vite-test`: Workers Observability, Logs và Traces bật; Logs lưu bền vững và lấy mẫu 100%; Traces lưu bền vững và lấy mẫu 10%; query-string redaction bật; `logpush:false`. Không thay đổi cấu hình, deployment hoặc traffic.
+- Query Observability API `view=traces`, lọc chính xác `$metadata.service=tttemple-vite-test` trong 24 giờ gần nhất, trả 2 trace summaries. Không lưu trace ID hoặc dữ liệu thô vào repo; chưa đối chiếu từng trace với request log nên chưa xác nhận được quan hệ từng request.
+- Usage API cho service trong bucket hiện hành trả 30 event và 183.093 byte. Truy vấn traces đã đọc 19.066.540 rows / 158.187.746 bytes, vì vậy runbook yêu cầu giới hạn timeframe và service, tránh truy vấn rộng lặp lại.
+- Tài liệu Cloudflare Workers Traces ghi retention 7 ngày và cho biết từ 01/12/2026 traces lưu trữ được tính vào usage ingestion/storage cấp account: https://developers.cloudflare.com/workers/observability/traces/. Giữ sampling 10%; không bật Logpush hoặc đổi billing.
+- P7 tiến triển: Logs và Traces ingestion đã được quan sát. P7 vẫn chưa đạt vì chưa chỉ định owner vận hành/xử lý sự cố và chưa có đối chiếu trace-request; Logpush tiếp tục tắt, chưa có destination được duyệt. Nguồn bằng chứng là Cloudflare API GET settings, GET usage, POST telemetry query và tài liệu Cloudflare tại thời điểm kiểm tra.
+
+## 19/11/2026 - P6 giảm draw call ở cụm trúc
+
+- Rà mã phát hiện 23 cụm trúc ở viền sân tạo 184 `Mesh` riêng (mỗi cụm 4 thân và 4 lá) nhưng chuyển động chung theo cụm. Đổi mỗi cụm thành 2 `InstancedMesh`, giữ 4 thân và 4 lá trong cùng cụm chuyển động; cấu trúc mã giảm phần này từ 184 xuống 46 đối tượng render, tức 138 draw call ít hơn theo ước lượng từ scene graph.
+- `pnpm build` đạt với 29 module. JavaScript game tăng từ build trước 535.660 byte (gzip 140.190 byte) lên 539.300 byte (gzip 141.290 byte), tăng 3.640 byte raw và 1.100 byte gzip do mã instancing; cảnh báo bundle trên 500 kB vẫn còn. Cần đo renderer.info/FPS trên thiết bị để xác nhận lợi ích thực tế và kiểm tra hình ảnh cụm trúc.
+- Không có Lighthouse CLI hoặc browser performance tracing MCP trong môi trường này. Browser in-app không kết nối được preview local `127.0.0.1:4173`, nên chưa có kiểm tra hình ảnh. Không chạy test suite, không deploy/commit/push; build chỉ xác nhận đóng gói.
+- P6 vẫn đang thực hiện. Nguồn bằng chứng: `src/garden.js`, output `pnpm build` và kết quả thử mở local preview ngày 19/11/2026.
+## 19/11/2026 - P7 thử đối chiếu trong timeframe hẹp
+
+- Query Cloudflare Observability API từ 06:30 đến 08:30 UTC, lọc chính xác `tttemple-vite-test`, trả 6 invocation groups với trace ID; truy vấn `view=traces` cùng timeframe trả 0 trace summaries. Chỉ đếm ID trong bộ nhớ để đối chiếu, không đưa ID vào output hoặc repo. Kết quả chưa đủ để kết luận Traces lỗi vì sampling cấu hình 10%.
+- Query invocations đọc 1.357.445 rows / 36.976.978 byte; query traces đọc 1.338.640 rows / 11.506.960 byte. Không lặp truy vấn nếu chưa có request mới để đối chiếu; ưu tiên timeframe ngắn quanh thời điểm request đã biết.
+- Nguồn: Cloudflare Observability API POST telemetry query lúc 08:30 UTC ngày 19/11/2026. Không đổi cấu hình, sampling, deployment hoặc traffic.
+## 19/11/2026 - P1 xác minh cục bộ workflow preview
+
+- `pnpm test` đạt 52/52; `pnpm build` đạt với 29 module. Wrangler 4.164.0 `deploy --dry-run --config poc/vite-preview/wrangler.jsonc` thoát mã 0, đọc 16 file asset từ `dist` và nhận binding `ASSETS`; không deploy Worker.
+- Lượt dry-run đầu cảnh báo Wrangler không ghi được log vào thư mục user profile ngoài workspace (`EPERM`) nhưng vẫn đóng gói. Đọc tài liệu Wrangler xác nhận có biến `WRANGLER_LOG_PATH`; chạy lại với log trong thư mục tạm thì dry-run sạch. Nguồn: https://developers.cloudflare.com/workers/wrangler/system-environment-variables/.
+- Workflow deploy thủ công vẫn chưa push hoặc chạy trên GitHub; Actions secrets chưa xác minh, chưa kiểm tra IP ngoài Việt Nam. Không đổi cấu hình Cloudflare hoặc traffic. P1 vẫn chưa đạt.
