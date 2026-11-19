@@ -2,12 +2,13 @@
 
 Ngày cập nhật: 19/11/2026. Đây là checklist cho tài khoản tổng hợp, không phải nghiệm thu production.
 
-## Giới hạn hiện tại
+## Cấu hình
 
-- Worker chỉ chấp nhận RP ID `localhost` và origin `http://localhost:5178`; Vite hiện chỉ bind `localhost`.
-- Vì vậy có thể thử passkey khả dụng trên chính máy Windows đang chạy POC. Trên iPhone, `localhost` trỏ về iPhone, không phải máy Windows.
-- Chưa cấu hình HTTPS hostname cho iPhone. Trước khi thử Safari iOS, cần một hostname HTTPS có chứng thư được thiết bị tin cậy và cấu hình RP ID trùng với hostname. Không dùng IP làm RP ID, không dùng tài khoản thật và không deploy config POC này.
-- Từ checkout này chưa chạy được browser test vì package WebAuthn thiếu: `npm ci --offline` báo `ENOTCACHED`; thử online bị treo và đã dừng. CI run [44553204486](https://github.com/lylamkhai218/tttemple/actions/runs/44553204486) vẫn đạt 61/61 test và smoke Wrangler local.
+- Mặc định không đổi: RP ID `localhost`, origin `http://localhost:5178`, Vite chỉ bind `localhost`.
+- POC hỗ trợ cấu hình RP ID và origin qua Wrangler vars `RP_ID`, `RP_ORIGIN`; với hostname khác localhost, chỉ nhận HTTPS và RP ID phải trùng hostname. Origin phải là origin chuẩn, gồm scheme và port nếu có, không kèm path.
+- Để thử iPhone, cần hostname do anh kiểm soát phân giải tới máy Windows và chứng thư có hostname đó trong SAN, được iPhone tin cậy. Hướng dẫn PowerShell nằm trong `poc/auth/README.md`. Chưa có hostname hoặc chứng thư nào được thiết lập.
+- Vite chỉ bind mọi giao diện mạng khi được bật rõ bằng `TTTEMPLE_POC_BIND_HOST=0.0.0.0`; chỉ khai báo một hostname cụ thể qua `TTTEMPLE_POC_ALLOWED_HOST`. Cert/key được đọc từ đường dẫn local `TTTEMPLE_POC_TLS_CERT` và `TTTEMPLE_POC_TLS_KEY`; không đưa private key vào repo. Giữ Worker ở `127.0.0.1` và không deploy cấu hình POC.
+- Không dùng IP làm RP ID, không dùng tài khoản thật. iPhone truy cập `localhost` sẽ trỏ vào chính iPhone chứ không phải máy Windows.
 
 ## Kiểm tra desktop trên cùng máy
 
@@ -23,7 +24,7 @@ Nút khóa tài khoản là thao tác một chiều trong POC, chỉ dùng ở s
 
 ## Cổng thử trên iPhone Safari
 
-Chỉ thực hiện sau khi có hostname HTTPS thử riêng và RP ID/origin đã được cấu hình nhất quán cho local POC. Lặp lại các bước đăng ký, restart với cùng persistence, đăng nhập, kiểm tra phiên và thu hồi phiên. Ghi model iPhone, phiên bản iOS/Safari, loại passkey (thiết bị hoặc iCloud Keychain), bước thất bại và tên lỗi WebAuthn. Không đưa token hoặc dữ liệu xác thực vào báo cáo.
+Chỉ thực hiện sau khi DNS, HTTPS cert và RP ID/origin được cấu hình nhất quán theo `poc/auth/README.md`. Lặp lại các bước đăng ký, restart với cùng persistence, đăng nhập, kiểm tra phiên và thu hồi phiên. Ghi model iPhone, phiên bản iOS/Safari, loại passkey (thiết bị hoặc iCloud Keychain), bước thất bại và tên lỗi WebAuthn. Không đưa token hoặc dữ liệu xác thực vào báo cáo.
 
 ## Phân loại bằng chứng
 

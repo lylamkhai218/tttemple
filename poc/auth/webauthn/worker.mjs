@@ -6,9 +6,8 @@ import {
 } from '@simplewebauthn/server';
 import { createPocState } from './poc-state.mjs';
 import { hasJsonContentType, readBoundedJson } from './request-json.mjs';
+import { resolveWebAuthnConfig } from './webauthn-config.mjs';
 
-const RP_ID = 'localhost';
-const RP_ORIGIN = 'http://localhost:5178';
 const RP_NAME = 'TTTemple Synthetic POC';
 const ACCOUNT_ID = 'synthetic-user';
 const ACCOUNT_LABEL = 'Synthetic user';
@@ -25,8 +24,8 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
   },
 });
 
-function hasExpectedOrigin(request) {
-  return request.headers.get('origin') === RP_ORIGIN;
+function hasExpectedOrigin(request, rpOrigin) {
+  return request.headers.get('origin') === rpOrigin;
 }
 
 function authToken(request) {
@@ -34,10 +33,10 @@ function authToken(request) {
   return value.startsWith('Bearer ') ? value.slice(7) : '';
 }
 
-export function createWebAuthnHandler(state = createPocState()) {
+export function createWebAuthnHandler(state = createPocState(), config = resolveWebAuthnConfig()) {
   return async function handle(request) {
     try {
-      return await handleRequest(request, state);
+      return await handleRequest(request, state, config);
     } catch (error) {
       console.log(JSON.stringify({ event: 'synthetic_passkey_request', outcome: 'error', error_type: error instanceof Error ? error.name : 'unknown' }));
       return json({ ok: false, error: 'request_failed' }, 500);
@@ -45,7 +44,7 @@ export function createWebAuthnHandler(state = createPocState()) {
   };
 }
 
-async function handleRequest(request, state) {
+async function handleRequest(request, state, config) {
   const url = new URL(request.url);
   if (!url.pathname.startsWith('/api/')) return new Response('Not found', { status: 404 });
 
@@ -64,7 +63,7 @@ async function handleRequest(request, state) {
   }
 
   if (request.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
-  if (!hasExpectedOrigin(request)) return json({ ok: false, error: 'origin_rejected' }, 403);
+  if (!hasExpectedOrigin(request, config.rpOrigin)) return json({ ok: false, error: 'origin_rejected' }, 403);
   if (!hasJsonContentType(request)) {
     return json({ ok: false, error: 'invalid_request' }, 400);
   }
@@ -78,7 +77,7 @@ async function handleRequest(request, state) {
     const userID = await state.getOrCreateUserId();
     const options = await generateRegistrationOptions({
       rpName: RP_NAME,
-      rpID: RP_ID,
+      rpID: config.rpId,
       userName: ACCOUNT_ID,
       userDisplayName: ACCOUNT_LABEL,
       userID,
@@ -104,8 +103,8 @@ async function handleRequest(request, state) {
       const verification = await verifyRegistrationResponse({
         response: body.response,
         expectedChallenge: body.challenge,
-        expectedOrigin: RP_ORIGIN,
-        expectedRPID: RP_ID,
+        expectedOrigin: config.rpOrigin,
+        expectedRPID: config.rpId,
         requireUserPresence: true,
         requireUserVerification: true,
         supportedAlgorithmIDs: SUPPORTED_ALGORITHMS,
@@ -137,7 +136,7 @@ async function handleRequest(request, state) {
     const credential = await state.getCredential();
     if (!credential) return json({ ok: false, error: 'credential_not_registered' }, 409);
     const options = await generateAuthenticationOptions({
-      rpID: RP_ID,
+      rpID: config.rpId,
       allowCredentials: [{ id: credential.id, transports: credential.transports }],
       timeout: 60_000,
       userVerification: 'required',
@@ -160,8 +159,8 @@ async function handleRequest(request, state) {
       const verification = await verifyAuthenticationResponse({
         response: body.response,
         expectedChallenge: body.challenge,
-        expectedOrigin: RP_ORIGIN,
-        expectedRPID: RP_ID,
+        expectedOrigin: config.rpOrigin,
+        expectedRPID: config.rpId,
         credential: {
           id: credential.id,
           publicKey: credential.publicKey,

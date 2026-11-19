@@ -388,3 +388,11 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - Cài package offline không thành công do npm cache thiếu `tsyringe` (`ENOTCACHED`). Thử `npm ci` online chờ registry hơn 50 giây không có output và đã dừng; không thay đổi file source. CI run [44553204486](https://github.com/lylamkhai218/tttemple/actions/runs/44553204486) vẫn là bằng chứng mới nhất: 61/61 test, build, Wrangler dry-run và smoke SQLite Durable Object local.
 - Chưa thực hiện authenticator vật lý hoặc iPhone. P2 còn mở; hostname HTTPS, tài khoản/luồng auth đã duyệt, Cloudflare CPU telemetry và phương án recovery vẫn là cổng riêng.
 - Nguồn: cấu hình `worker.mjs`, `vite.config.mjs`, README POC, kết quả `npm ci` ngày 19/11/2026 và CI run [44553204486](https://github.com/lylamkhai218/tttemple/actions/runs/44553204486).
+
+## 19/11/2026 - P2 cấu hình hostname HTTPS cho test thiết bị
+
+- Thay RP ID/origin cố định bằng cấu hình `RP_ID` và `RP_ORIGIN`. Giá trị mặc định vẫn `localhost` và `http://localhost:5178`; hostname khác chỉ chấp nhận HTTPS, hostname RP ID phải khớp chính xác, origin không chứa path hoặc query. Smoke endpoint dùng cùng origin cấu hình.
+- Vite hỗ trợ bind LAN theo lựa chọn rõ ràng, một hostname cụ thể và cert/key TLS do người chạy cung cấp. Hướng dẫn được thêm vào `poc/auth/README.md`; không tạo chứng thư, cấu hình DNS, mở server hoặc deploy Cloudflare trong thay đổi này.
+- Test validator cấu hình đạt 5/5. Nhóm test độc lập transactional state, body parser và validator đạt 14/14; `node --check` và `git diff --check` đạt. Full `npm test --prefix poc/auth/webauthn` có 9 test qua và 2 file không khởi động do checkout hiện không có nội dung package `@simplewebauthn/server`; CI run mới chưa có.
+- Chưa có hostname/cert thật, chưa dùng authenticator desktop hoặc iPhone, chưa xác minh HTTPS server thực. P2 vẫn mở; cần CI sau push, thông tin hostname/cert đã tin cậy, authenticator thật, Cloudflare CPU telemetry, phương án recovery và review bảo mật.
+- Nguồn: `poc/auth/webauthn/webauthn-config.mjs`, `worker.mjs`, `worker-cloudflare.mjs`, `vite.config.mjs`, `tests/webauthn-config.test.mjs`, log lệnh test Node ngày 19/11/2026.

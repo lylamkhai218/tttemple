@@ -73,11 +73,29 @@ pnpm exec vite --config poc/auth/webauthn/vite.config.mjs
 
 Mở `http://localhost:5178`. POC chỉ có tài khoản `synthetic-user` cùng company/role giả. Worker local chuyển request tới một Durable Object SQLite riêng cho tài khoản tổng hợp; challenge, credential công khai, bộ đếm thử sai, trạng thái khóa và hash phiên nằm trong storage của object thay vì biến bộ nhớ của Worker. Mã đăng ký và mã admin `local-demo-only` vẫn chỉ là giá trị demo, không có bảo vệ thật. `wrangler.local.jsonc` chỉ dành cho `wrangler dev`; tuyệt đối không deploy hoặc nối POC này vào game.
 
-RP ID và origin hiện khóa ở `localhost`; passkey được thử trên authenticator của máy chạy Worker/UI. iPhone không thể dùng `localhost` này để tới máy Windows. Safari iOS cần HTTPS hostname riêng cùng RP ID khớp; xem checklist tại `specs/p2-webauthn-device-test.md`. Chưa cấu hình hoặc triển khai hostname như vậy.
+Mặc định POC vẫn dùng RP ID `localhost` và origin `http://localhost:5178`. Có thể cấu hình riêng RP ID/origin và Vite HTTPS để chuẩn bị thử trên thiết bị; chưa có hostname hoặc chứng thư nào được tạo/cấu hình sẵn. Cấu hình ngoài localhost bắt buộc HTTPS và hostname phải trùng chính xác RP ID. iPhone cần hostname phân giải tới máy Windows và chứng thư TLS được iPhone tin cậy; xem các bước tại `specs/p2-webauthn-device-test.md`. Giữ Worker local ở `127.0.0.1`, không deploy config POC này.
+
+Ví dụ dùng một hostname mà anh sở hữu, có DNS trỏ tới máy Windows và chứng thư TLS hợp lệ chứa hostname đó. Thay hostname cùng hai đường dẫn chứng thư bằng giá trị thật của môi trường thử. Chạy hai lệnh Wrangler trong terminal thứ nhất:
+
+```powershell
+pnpm exec wrangler dev --config poc/auth/webauthn/wrangler.local.jsonc --ip 127.0.0.1 --port 8787 --var RP_ID:passkey-poc.example.com --var RP_ORIGIN:https://passkey-poc.example.com:5178
+```
+
+Trong terminal thứ hai, cấu hình Vite để iPhone truy cập qua mạng nội bộ:
+
+```powershell
+$env:TTTEMPLE_POC_BIND_HOST = "0.0.0.0"
+$env:TTTEMPLE_POC_ALLOWED_HOST = "passkey-poc.example.com"
+$env:TTTEMPLE_POC_TLS_CERT = "C:\certs\passkey-poc.example.com.pem"
+$env:TTTEMPLE_POC_TLS_KEY = "C:\certs\passkey-poc.example.com-key.pem"
+pnpm exec vite --config poc/auth/webauthn/vite.config.mjs
+```
+
+Chỉ thêm hostname cụ thể anh kiểm soát; không đặt allowed host thành wildcard. Mở `https://passkey-poc.example.com:5178` trên iPhone. File khóa TLS không đưa vào Git. Nếu chưa có hostname, DNS hoặc chứng thư được iPhone tin cậy thì dừng ở bước cấu hình, không thay bằng HTTP hoặc IP làm RP ID.
 
 Trình duyệt giữ user gesture khi gọi WebAuthn, nên thao tác tách làm hai nút: chuẩn bị options rồi bấm đăng ký/đăng nhập. Bấm “Tạo passkey trên thiết bị” sẽ tạo một credential thật trên authenticator của thiết bị, gắn với RP `localhost`; chỉ bấm khi chủ máy chủ động muốn thử. Không tạo passkey hoặc dùng tài khoản thật khi kiểm tra tự động.
 
-`npm test --prefix poc/auth/webauthn` chạy các test state, storage transactional giả lập, challenge dùng một lần, origin, replay, giới hạn thử sai, thu hồi/thay phiên, bộ đọc body giới hạn và vector chữ ký ECDSA tổng hợp. Bộ đọc JSON streaming giới hạn 64 KiB cho API xác thực và 1 KiB cho endpoint smoke local, đếm byte thực, hủy stream khi vượt trần, từ chối UTF-8 sai, kiểm tra MIME type chính xác và không dựa riêng vào `Content-Length`. State adapter đặt chỗ lượt verify trước khi kiểm tra chữ ký, đồng thời chỉ cấp session khi tài khoản chưa khóa; test 20 lượt đồng thời xác nhận chỉ 5 lượt được phép. Checkout này thiếu package WebAuthn do npm registry trả `ECONNRESET`, nên test tích hợp cục bộ chưa chạy được. GitHub Actions run [44553204486](https://github.com/lylamkhai218/tttemple/actions/runs/44553204486) cài package từ lockfile và đạt 61/61 test, build, Wrangler dry-run cùng smoke runtime local. Smoke dùng `SMOKE_MODE=1`: challenge dùng một lần qua restart, session mới thu hồi session cũ, session và revoke còn hiệu lực sau restart, khóa tài khoản còn sau restart. Các endpoint smoke chỉ có trong local config và cần mã demo tổng hợp. Đây vẫn không phải Cloudflare remote hoặc WebAuthn đầu-cuối bằng authenticator thật.
+`npm test --prefix poc/auth/webauthn` chạy các test state, storage transactional giả lập, challenge dùng một lần, origin, replay, giới hạn thử sai, thu hồi/thay phiên, bộ đọc body giới hạn, cấu hình RP/origin và vector chữ ký ECDSA tổng hợp. Bộ đọc JSON streaming giới hạn 64 KiB cho API xác thực và 1 KiB cho endpoint smoke local, đếm byte thực, hủy stream khi vượt trần, từ chối UTF-8 sai, kiểm tra MIME type chính xác và không dựa riêng vào `Content-Length`. State adapter đặt chỗ lượt verify trước khi kiểm tra chữ ký, đồng thời chỉ cấp session khi tài khoản chưa khóa; test 20 lượt đồng thời xác nhận chỉ 5 lượt được phép. Smoke dùng `SMOKE_MODE=1`: challenge dùng một lần qua restart, session mới thu hồi session cũ, session và revoke còn hiệu lực sau restart, khóa tài khoản còn sau restart. Các endpoint smoke chỉ có trong local config và cần mã demo tổng hợp. Test runner hoặc smoke local không chứng minh Cloudflare remote hay WebAuthn đầu-cuối bằng authenticator thật.
 
 `worker-ecdsa-benchmark.mjs` dùng một public key/challenge/signature tổng hợp để đo phần xác minh chữ ký P-256 trên Worker. Nó chỉ đo primitive chữ ký, không đại diện toàn bộ xác minh WebAuthn, lưu credential, D1 hay chi phí request thực.
 

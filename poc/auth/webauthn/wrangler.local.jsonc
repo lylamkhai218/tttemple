@@ -5,7 +5,11 @@
   "compatibility_date": "2026-11-19",
   "workers_dev": false,
   "preview_urls": false,
-  "vars": { "SMOKE_MODE": "1" },
+  "vars": {
+    "SMOKE_MODE": "1",
+    "RP_ID": "localhost",
+    "RP_ORIGIN": "http://localhost:5178"
+  },
   "durable_objects": {
     "bindings": [{ "name": "SYNTHETIC_AUTH", "class_name": "SyntheticAuthAccount" }]
   },

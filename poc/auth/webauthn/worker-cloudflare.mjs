@@ -3,8 +3,8 @@ import { DurableObject } from 'cloudflare:workers';
 import { createPocState } from './poc-state.mjs';
 import { hasJsonContentType, readBoundedJson } from './request-json.mjs';
 import { createWebAuthnHandler } from './worker.mjs';
+import { resolveWebAuthnConfig } from './webauthn-config.mjs';
 
-const SMOKE_ORIGIN = 'http://localhost:5178';
 const SMOKE_ADMIN_CODE = 'local-demo-only';
 
 function json(data, status = 200) {
@@ -22,7 +22,8 @@ export class SyntheticAuthAccount extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     this.state = createPocState({ storage: ctx.storage });
-    this.handleRequest = createWebAuthnHandler(this.state);
+    this.config = resolveWebAuthnConfig({ rpId: env.RP_ID, rpOrigin: env.RP_ORIGIN });
+    this.handleRequest = createWebAuthnHandler(this.state, this.config);
   }
 
   fetch(request) {
@@ -37,8 +38,9 @@ export class SyntheticAuthAccount extends DurableObject {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const config = resolveWebAuthnConfig({ rpId: env.RP_ID, rpOrigin: env.RP_ORIGIN });
     if (url.pathname.startsWith('/__smoke/')) {
-      if (env.SMOKE_MODE !== '1' || request.method !== 'POST' || request.headers.get('origin') !== SMOKE_ORIGIN) {
+      if (env.SMOKE_MODE !== '1' || request.method !== 'POST' || request.headers.get('origin') !== config.rpOrigin) {
         return new Response('Not found', { status: 404 });
       }
       if (!hasJsonContentType(request)) {
