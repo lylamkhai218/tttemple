@@ -15,7 +15,7 @@ Worker `tttemple-vite-test` phục vụ asset build trong `dist/`. `worker.mjs` 
 - Workflow cài đúng phiên bản Node/pnpm của repo, chạy test và build hiện có, kiểm tra gói bằng `wrangler deploy --dry-run`, rồi mới deploy `tttemple-vite-test`. Worker này là đường dẫn bản thử; lệnh deploy sẽ đưa phiên bản mới lên 100% traffic của Worker thử.
 - Trước khi chạy, repo GitHub cần có Actions secrets `CLOUDFLARE_API_TOKEN` và `CLOUDFLARE_ACCOUNT_ID`. Token cần quyền sửa Workers trong đúng account. Không lưu hoặc dán token vào repo hay chat.
 - Config Wrangler giờ khai báo Logs và Traces cùng sampling/redaction để lần deploy sau giữ cấu hình Observability đã bật qua API.
-- Chưa chạy workflow, chưa cài GitHub secrets, chưa deploy. Các thay đổi này hiện chỉ ở checkout local; cần commit/push để workflow xuất hiện trong GitHub Actions. Không chạy workflow trên nhánh khác vì job được chặn theo nhánh.
+- CI workflow run [44500261192](https://github.com/lylamkhai218/tttemple/actions/runs/44500261192) đã qua: 52/52 test và build. Deploy workflow chưa chạy. GitHub Settings read-only hiện không có repository hoặc environment Actions secrets; cần cấu hình `CLOUDFLARE_API_TOKEN` và `CLOUDFLARE_ACCOUNT_ID` trong repo trước khi deploy. Không gửi token qua chat. Không chạy workflow trên nhánh khác vì job được chặn theo nhánh.
 
 ## Rollback khi cần khôi phục
 

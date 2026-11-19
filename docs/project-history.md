@@ -304,3 +304,9 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - Thêm bước `npm ci --prefix poc/auth/webauthn` sau root install trong cả `.github/workflows/ci.yml` và `.github/workflows/deploy-preview.yml`. Đây là thay đổi workflow, chưa push/rerun.
 - Đã thử cài lại local theo `package-lock.json`; npm registry trả `ECONNRESET`, nên `node_modules` riêng của POC hiện thiếu package và local test fail vì cùng nguyên nhân. Không sửa lockfile, mã POC hoặc cấu hình Cloudflare; không deploy. Cần CI sau khi push để xác minh bước cài đặt trên runner.
 - Nguồn: GitHub Actions run https://github.com/lylamkhai218/tttemple/actions/runs/44499048283 và log job; kết quả `npm ci` local ngày 19/11/2026.
+## 19/11/2026 - P1 CI thành công sau khi cài dependency WebAuthn riêng
+
+- Commit `45f2ddd` bổ sung `npm ci --prefix poc/auth/webauthn` vào CI và deploy workflow. GitHub Actions run [44500261192](https://github.com/lylamkhai218/tttemple/actions/runs/44500261192) thành công trên commit này: npm ci package riêng, `pnpm test` đạt 52/52 và `pnpm build` thành công. Wrangler dry-run local cũng đạt với 16 assets và binding ASSETS.
+- Trang GitHub Settings Actions Secrets được đọc read-only, xác nhận hiện chưa có repository hoặc environment secrets. Vì vậy deploy workflow chưa chạy; chưa thay đổi Worker, traffic hoặc Cloudflare config. Cần người quản lý repo cấu hình `CLOUDFLARE_API_TOKEN` và `CLOUDFLARE_ACCOUNT_ID` trong Settings rồi mới có thể chạy deploy đã xác nhận.
+- Thử cài lại POC local gặp `ECONNRESET` từ npm registry; node_modules riêng đang thiếu dependency, dù CI cài đúng lockfile và pass. GitHub runner cảnh báo các action `@v4` vẫn khai báo Node 20 và bị ép chạy Node 24; đây là warning không làm fail run, cần xem xét cập nhật riêng.
+- P1 vẫn chưa đạt: thiếu Actions secrets, chưa deploy/kiểm tra IP ngoài Việt Nam và chưa diễn tập rollback. Không dùng lọc quốc gia thay đăng nhập.
