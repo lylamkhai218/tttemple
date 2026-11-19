@@ -372,3 +372,11 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - Kiểm tra cục bộ cùng body/state đạt 8/8; cú pháp và diff sạch. GitHub Actions run [44551885489](https://github.com/lylamkhai218/tttemple/actions/runs/44551885489), commit `e465a88`, thành công với 60/60 test, build, Wrangler dry-run và smoke SQLite Durable Object local.
 - Đây không phải kiểm tra trên Cloudflare remote. P2 còn chờ authenticator/iOS, CPU telemetry truy xuất được, recovery và review bảo mật; không deploy hoặc đổi cấu hình Cloudflare.
 - Nguồn: `poc/auth/webauthn/poc-state.mjs`, `worker.mjs`, `tests/poc-state.test.mjs`, `tests/persistent-state.test.mjs`; log CI run [44551885489](https://github.com/lylamkhai218/tttemple/actions/runs/44551885489).
+
+## 19/11/2026 - P2 kiểm tra chính xác MIME type JSON
+
+- Rà request validation phát hiện cả auth API và smoke endpoint dùng `startsWith('application/json')`. Cách này nhận tiền tố giả như `application/jsonp`; body vẫn bị JSON parser kiểm tra nhưng header contract chưa chặt.
+- Thêm helper `hasJsonContentType()` dùng chung, nhận `application/json` không phân biệt hoa thường và tham số hợp lệ như `charset=utf-8`, từ chối `application/jsonp` và `application/json-seq`.
+- Test helper/state cục bộ đạt 9/9; syntax check và `git diff --check` đạt. GitHub Actions run [44553204486](https://github.com/lylamkhai218/tttemple/actions/runs/44553204486), commit `469161b`, đạt 61/61 test, build, Wrangler dry-run và smoke SQLite Durable Object local.
+- Không deploy hoặc đổi cấu hình Cloudflare. P2 còn cần authenticator/iOS thật, telemetry CPU trên Cloudflare, phương án recovery và review bảo mật.
+- Nguồn: `poc/auth/webauthn/request-json.mjs`, `worker.mjs`, `worker-cloudflare.mjs`, `tests/request-body.test.mjs`; log CI run [44553204486](https://github.com/lylamkhai218/tttemple/actions/runs/44553204486).
