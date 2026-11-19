@@ -356,3 +356,11 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - CI run [44549611574](https://github.com/lylamkhai218/tttemple/actions/runs/44549611574), commit `79832b7`, đạt: 59/59 test, build, Wrangler dry-run và smoke test SQLite Durable Object local.
 - Không deploy hoặc đổi cấu hình Cloudflare remote. Đây vẫn là kiểm tra Wrangler local trên GitHub runner; P2 chưa đạt authenticator/iOS, CPU Cloudflare, recovery hoặc review bảo mật.
 - Nguồn: diff `79832b7`; log GitHub Actions run [44549611574](https://github.com/lylamkhai218/tttemple/actions/runs/44549611574).
+
+## 19/11/2026 - P2 đặt chỗ lượt xác thực nguyên tử
+
+- Rà luồng WebAuthn phát hiện `canAuthenticate()` chỉ đọc trạng thái. Nhiều yêu cầu verify đồng thời có thể cùng qua bước này trước khi các thất bại được ghi, làm giới hạn 5 lượt không chặn lượng xác minh chữ ký đồng thời.
+- Thêm `beginAuthenticationAttempt()` chạy trong storage transaction và tăng bộ đếm ngay trước bước tiêu tốn CPU. Worker từ chối thêm verify khi hết lượt; lỗi vẫn không tiết lộ chi tiết chữ ký.
+- Test storage transactional gửi 20 lượt đồng thời, xác nhận chính xác 5 lượt được nhận, rồi xác nhận cửa sổ mới mở lại; kiểm tra cục bộ cùng bộ đọc body/state đạt 8/8. `node --check` và `git diff --check` đạt.
+- GitHub Actions run [44550788943](https://github.com/lylamkhai218/tttemple/actions/runs/44550788943), commit `b045531`, thành công: 60/60 test, build, Wrangler dry-run và smoke SQLite Durable Object local. Không deploy hoặc đổi cấu hình Cloudflare. P2 vẫn cần authenticator/iOS thật, CPU telemetry Cloudflare, recovery và review bảo mật.
+- Nguồn: code `poc/auth/webauthn/poc-state.mjs`, `worker.mjs`, `tests/persistent-state.test.mjs`; log run [44550788943](https://github.com/lylamkhai218/tttemple/actions/runs/44550788943).
