@@ -341,3 +341,10 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - Tách helper thành `poc/auth/webauthn/request-json.mjs`; thêm bốn ca kiểm tra stream vượt trần không Content-Length, UTF-8 lỗi, JSON hợp lệ và Content-Length khai vượt mức. Hai test state hiện có và bốn test helper đạt 6/6 cục bộ. `node --check` và `git diff --check` đạt.
 - Test tích hợp Worker và CI chưa chạy cho thay đổi này: package `@simplewebauthn/server` thiếu trong checkout vì npm registry trả `ECONNRESET`. CI cài package riêng qua `npm ci` theo lockfile nên cần push để xác minh tích hợp. Không deploy hoặc thay đổi cấu hình/traffic Cloudflare. P2 vẫn chưa đạt; authenticator thật, iOS, CPU telemetry Cloudflare, phương án recovery và review bảo mật còn mở.
 - Nguồn: diff checkout ngày 19/11/2026 tại `poc/auth/webauthn/worker.mjs`, `request-json.mjs`, `tests/request-body.test.mjs`; kết quả `node --test` với 6 ca.
+
+## 19/11/2026 - P2 CI xác nhận body streaming và Durable Object
+
+- Commit `8017edd` đã push lên `progress/2026-11-18`. GitHub Actions run [44548661766](https://github.com/lylamkhai218/tttemple/actions/runs/44548661766) hoàn tất thành công: package WebAuthn cài theo lockfile, 58/58 test đạt, Vite build đạt, Wrangler Durable Object dry-run đạt và local SQLite smoke đạt.
+- Bốn test body streaming mới cùng Worker integration test đều chạy trong suite CI. Smoke runtime xác nhận challenge replay bị từ chối, session được giữ và thu hồi qua restart, trạng thái khóa còn sau restart.
+- Đây là test trên GitHub runner với Wrangler local; không phải deploy hoặc kiểm thử Cloudflare remote. Bundle game hiện 539,30 kB gzip 141,29 kB và vẫn có cảnh báo Vite chunk trên 500 kB. P2 chưa đạt vì còn authenticator/iOS thật, đo CPU trên Cloudflare có telemetry truy xuất được, recovery và review bảo mật.
+- Nguồn: log run [44548661766](https://github.com/lylamkhai218/tttemple/actions/runs/44548661766); commit `8017edd`.
