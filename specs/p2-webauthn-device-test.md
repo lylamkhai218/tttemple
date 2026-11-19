@@ -28,7 +28,7 @@ Chỉ thực hiện sau khi DNS, HTTPS cert và RP ID/origin được cấu hìn
 
 ## Phân loại bằng chứng
 
-- CI 61/61 và Wrangler local smoke: test tự động trên runner, chưa chứng minh authenticator vật lý.
+- CI run [44559409512](https://github.com/lylamkhai218/tttemple/actions/runs/44559409512) đạt 67/67, build, Wrangler dry-run và smoke Durable Object local; đây là test tự động, chưa chứng minh authenticator vật lý.
 - Desktop cùng máy: chỉ nghiệm thu thao tác passkey trên browser/authenticator của máy đó.
 - iPhone Safari: chưa chạy cho tới khi có HTTPS hostname/RP ID phù hợp và thiết bị thực hiện thao tác.
 - Cloudflare remote CPU, khôi phục tài khoản và review bảo mật: là cổng riêng, checklist này không thay thế.

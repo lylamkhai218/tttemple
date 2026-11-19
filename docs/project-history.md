@@ -396,3 +396,9 @@ Chỉ bổ sung mục mới. Ngày theo múi giờ Việt Nam. Thông tin đã t
 - Test validator cấu hình đạt 5/5. Nhóm test độc lập transactional state, body parser và validator đạt 14/14; `node --check` và `git diff --check` đạt. Full `npm test --prefix poc/auth/webauthn` có 9 test qua và 2 file không khởi động do checkout hiện không có nội dung package `@simplewebauthn/server`; CI run mới chưa có.
 - Chưa có hostname/cert thật, chưa dùng authenticator desktop hoặc iPhone, chưa xác minh HTTPS server thực. P2 vẫn mở; cần CI sau push, thông tin hostname/cert đã tin cậy, authenticator thật, Cloudflare CPU telemetry, phương án recovery và review bảo mật.
 - Nguồn: `poc/auth/webauthn/webauthn-config.mjs`, `worker.mjs`, `worker-cloudflare.mjs`, `vite.config.mjs`, `tests/webauthn-config.test.mjs`, log lệnh test Node ngày 19/11/2026.
+
+## 19/11/2026 - P2 xác minh CI cấu hình HTTPS/passkey
+
+- Commit `fcabbe15911a7b72a4dae060e5f828ccbad70aab` đã push lên `progress/2026-11-18`. GitHub Actions run [44559409512](https://github.com/lylamkhai218/tttemple/actions/runs/44559409512) hoàn tất thành công: 67/67 test, build, Wrangler deploy dry-run và smoke Durable Object SQLite local. CI cài dependencies WebAuthn qua `npm ci` từ lockfile; smoke xác nhận challenge replay bị từ chối, session mới nhất tồn tại qua restart rồi thu hồi đúng, trạng thái khóa còn qua restart.
+- Đây là CI runner và Wrangler local, không phải Cloudflare remote, không chạy HTTPS với cert thật và không dùng authenticator trên desktop/iPhone. P2 vẫn chưa đạt nghiệm thu thiết bị hoặc bảo mật.
+- Nguồn: GitHub Actions run [44559409512](https://github.com/lylamkhai218/tttemple/actions/runs/44559409512), commit `fcabbe15911a7b72a4dae060e5f828ccbad70aab`.
