@@ -4,19 +4,19 @@ import { createPocState, POC_LIMITS } from '../poc-state.mjs';
 import worker from '../worker.mjs';
 import { runSignatureBenchmark } from '../worker-ecdsa-benchmark.mjs';
 
-test('challenge is scoped to ceremony, expires, and can be consumed once', () => {
+test('challenge is scoped to ceremony, expires, and can be consumed once', async () => {
   let now = 1000;
   const state = createPocState({ now: () => now });
   const challenge = `synthetic-challenge-${'a'.repeat(32)}`;
-  state.issueChallenge('registration', challenge);
-  assert.equal(state.consumeChallenge('authentication', challenge), null);
-  assert.equal(state.consumeChallenge('registration', challenge)?.challenge, challenge);
-  assert.equal(state.consumeChallenge('registration', challenge), null);
+  await state.issueChallenge('registration', challenge);
+  assert.equal(await state.consumeChallenge('authentication', challenge), null);
+  assert.equal((await state.consumeChallenge('registration', challenge))?.challenge, challenge);
+  assert.equal(await state.consumeChallenge('registration', challenge), null);
 
   const expired = `synthetic-expired-${'b'.repeat(32)}`;
-  state.issueChallenge('registration', expired);
+  await state.issueChallenge('registration', expired);
   now += POC_LIMITS.challengeTtlMs;
-  assert.equal(state.consumeChallenge('registration', expired), null);
+  assert.equal(await state.consumeChallenge('registration', expired), null);
 });
 
 test('a newer successful sign-in replaces the only active session', async () => {
@@ -27,7 +27,7 @@ test('a newer successful sign-in replaces the only active session', async () => 
   assert.notEqual(second, first);
   assert.equal(await state.validateSession(first), false);
   assert.equal(await state.validateSession(second), true);
-  state.revokeSession();
+  await state.revokeSession();
   assert.equal(await state.validateSession(second), false);
 });
 
@@ -35,12 +35,12 @@ test('five failed authentications are limited and locking revokes the session', 
   const state = createPocState();
   const token = await state.issueSession();
   for (let attempt = 0; attempt < POC_LIMITS.authenticationFailureLimit; attempt += 1) {
-    assert.equal(state.canAuthenticate(), true);
-    state.recordAuthenticationFailure();
+    assert.equal(await state.canAuthenticate(), true);
+    await state.recordAuthenticationFailure();
   }
-  assert.equal(state.canAuthenticate(), false);
-  state.lockAccount();
-  assert.equal(state.canAuthenticate(), false);
+  assert.equal(await state.canAuthenticate(), false);
+  await state.lockAccount();
+  assert.equal(await state.canAuthenticate(), false);
   assert.equal(await state.validateSession(token), false);
 });
 

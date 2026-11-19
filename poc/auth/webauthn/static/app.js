@@ -96,7 +96,7 @@ loginButton.addEventListener('click', async () => {
     });
     state.sessionToken = result.sessionToken;
     state.authentication = null;
-    show('Đăng nhập passkey thành công. Phiên thử được giữ trong bộ nhớ tab.');
+    show('Đăng nhập passkey thành công. Token thử chỉ được giữ trong bộ nhớ tab.');
   } catch (error) {
     state.authentication = null;
     show(`Đăng nhập bị từ chối hoặc đã hủy: ${error.message}`);

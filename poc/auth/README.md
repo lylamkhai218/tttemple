@@ -64,18 +64,18 @@ Thư mục `webauthn/` là POC riêng, dùng `@simplewebauthn/server` 14.1.0 và
 
 ```powershell
 $env:XDG_CONFIG_HOME = "$PWD\poc\auth\webauthn\.wrangler"
-pnpm exec wrangler dev --config poc/auth/webauthn/wrangler.jsonc --ip 127.0.0.1 --port 8787
+pnpm exec wrangler dev --config poc/auth/webauthn/wrangler.local.jsonc --ip 127.0.0.1 --port 8787
 ```
 
 ```powershell
 pnpm exec vite --config poc/auth/webauthn/vite.config.mjs
 ```
 
-Mở `http://localhost:5178`. POC chỉ có tài khoản `synthetic-user`, company/role giả, challenge và session trong bộ nhớ; dừng hoặc khởi động lại Worker sẽ xóa trạng thái. Mã đăng ký và mã admin `local-demo-only` là giá trị giả, không có bảo vệ thật. Không deploy config này hoặc nối vào game.
+Mở `http://localhost:5178`. POC chỉ có tài khoản `synthetic-user` cùng company/role giả. Worker local chuyển request tới một Durable Object SQLite riêng cho tài khoản tổng hợp; challenge, credential công khai, bộ đếm thử sai, trạng thái khóa và hash phiên nằm trong storage của object thay vì biến bộ nhớ của Worker. Mã đăng ký và mã admin `local-demo-only` vẫn chỉ là giá trị demo, không có bảo vệ thật. `wrangler.local.jsonc` chỉ dành cho `wrangler dev`; tuyệt đối không deploy hoặc nối POC này vào game.
 
 Trình duyệt giữ user gesture khi gọi WebAuthn, nên thao tác tách làm hai nút: chuẩn bị options rồi bấm đăng ký/đăng nhập. Bấm “Tạo passkey trên thiết bị” sẽ tạo một credential thật trên authenticator của thiết bị, gắn với RP `localhost`; chỉ bấm khi chủ máy chủ động muốn thử. Không tạo passkey hoặc dùng tài khoản thật khi kiểm tra tự động.
 
-`npm test --prefix poc/auth/webauthn` chạy các test state, challenge dùng một lần, origin, replay, giới hạn thử sai, thu hồi/thay phiên và vector chữ ký ECDSA tổng hợp. Đây chưa phải kiểm thử WebAuthn đầu-cuối bằng authenticator.
+`npm test --prefix poc/auth/webauthn` chạy các test state, storage transactional giả lập, challenge dùng một lần, origin, replay, giới hạn thử sai, thu hồi/thay phiên và vector chữ ký ECDSA tổng hợp. Các bài storage chạy qua adapter tương thích API transaction, chưa thay thế kiểm thử runtime Durable Object thực. Đây chưa phải kiểm thử WebAuthn đầu-cuối bằng authenticator.
 
 `worker-ecdsa-benchmark.mjs` dùng một public key/challenge/signature tổng hợp để đo phần xác minh chữ ký P-256 trên Worker. Nó chỉ đo primitive chữ ký, không đại diện toàn bộ xác minh WebAuthn, lưu credential, D1 hay chi phí request thực.
 

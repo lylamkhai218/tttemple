@@ -25,3 +25,5 @@ jobs:
         run: npm ci --prefix poc/auth/webauthn
       - run: pnpm test
       - run: pnpm build
+      - name: Validate local WebAuthn Durable Object bundle
+        run: pnpm exec wrangler deploy --dry-run --config poc/auth/webauthn/wrangler.local.jsonc

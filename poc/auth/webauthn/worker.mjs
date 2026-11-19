@@ -15,9 +15,6 @@ const ENROLLMENT_CODE = 'local-demo-only';
 const ADMIN_DEMO_CODE = 'local-demo-only';
 const SUPPORTED_ALGORITHMS = [-7, -257];
 const MAX_BODY_BYTES = 64 * 1024;
-const state = createPocState();
-let userID;
-let enrollmentConsumed = false;
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status,
@@ -51,15 +48,26 @@ function authToken(request) {
   return value.startsWith('Bearer ') ? value.slice(7) : '';
 }
 
-async function handle(request) {
+export function createWebAuthnHandler(state = createPocState()) {
+  return async function handle(request) {
+    try {
+      return await handleRequest(request, state);
+    } catch (error) {
+      console.log(JSON.stringify({ event: 'synthetic_passkey_request', outcome: 'error', error_type: error instanceof Error ? error.name : 'unknown' }));
+      return json({ ok: false, error: 'request_failed' }, 500);
+    }
+  };
+}
+
+async function handleRequest(request, state) {
   const url = new URL(request.url);
   if (!url.pathname.startsWith('/api/')) return new Response('Not found', { status: 404 });
 
   if (request.method === 'GET' && url.pathname === '/api/state') {
     return json({
       account: ACCOUNT_ID,
-      enrolled: state.hasCredential(),
-      locked: state.isLocked(),
+      enrolled: await state.hasCredential(),
+      locked: await state.isLocked(),
       sessionValid: await state.validateSession(authToken(request)),
     });
   }
@@ -75,10 +83,10 @@ async function handle(request) {
   if (!body) return json({ ok: false, error: 'invalid_request' }, 400);
 
   if (url.pathname === '/api/webauthn/register/options') {
-    if (body.enrollmentCode !== ENROLLMENT_CODE || enrollmentConsumed || state.hasCredential() || state.isLocked()) {
+    if (body.enrollmentCode !== ENROLLMENT_CODE || await state.hasCredential() || await state.isLocked()) {
       return json({ ok: false, error: 'enrollment_unavailable' }, 403);
     }
-    userID ??= crypto.getRandomValues(new Uint8Array(32));
+    const userID = await state.getOrCreateUserId();
     const options = await generateRegistrationOptions({
       rpName: RP_NAME,
       rpID: RP_ID,
@@ -90,15 +98,17 @@ async function handle(request) {
       authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
       supportedAlgorithmIDs: SUPPORTED_ALGORITHMS,
     });
-    state.issueChallenge('registration', options.challenge);
+    if (!(await state.issueChallenge('registration', options.challenge))) {
+      return json({ ok: false, error: 'too_many_pending_challenges' }, 503);
+    }
     return json({ ok: true, challenge: options.challenge, options });
   }
 
   if (url.pathname === '/api/webauthn/register/verify') {
-    if (body.enrollmentCode !== ENROLLMENT_CODE || enrollmentConsumed || state.hasCredential() || state.isLocked()) {
+    if (body.enrollmentCode !== ENROLLMENT_CODE || await state.hasCredential() || await state.isLocked()) {
       return json({ ok: false, error: 'enrollment_unavailable' }, 403);
     }
-    if (typeof body.challenge !== 'string' || !state.consumeChallenge('registration', body.challenge)) {
+    if (typeof body.challenge !== 'string' || !(await state.consumeChallenge('registration', body.challenge))) {
       return json({ ok: false, error: 'challenge_invalid_or_used' }, 400);
     }
     try {
@@ -116,15 +126,15 @@ async function handle(request) {
         return json({ ok: false, error: 'registration_rejected' }, 400);
       }
       const info = verification.registrationInfo;
-      state.setCredential({
+      const stored = await state.setCredential({
         id: info.credential.id,
         publicKey: info.credential.publicKey,
         counter: info.credential.counter,
         transports: body.response?.response?.transports || [],
         deviceType: info.credentialDeviceType,
         backedUp: info.credentialBackedUp,
-      });
-      enrollmentConsumed = true;
+      }, { onlyIfAbsent: true });
+      if (!stored) return json({ ok: false, error: 'enrollment_unavailable' }, 409);
       console.log(JSON.stringify({ event: 'synthetic_passkey_registration', outcome: 'verified', device_type: info.credentialDeviceType }));
       return json({ ok: true, verified: true, account: ACCOUNT_ID });
     } catch (error) {
@@ -134,8 +144,8 @@ async function handle(request) {
   }
 
   if (url.pathname === '/api/webauthn/authenticate/options') {
-    if (!state.canAuthenticate()) return json({ ok: false, error: state.isLocked() ? 'account_locked' : 'temporarily_limited' }, 429);
-    const credential = state.getCredential();
+    if (!(await state.canAuthenticate())) return json({ ok: false, error: await state.isLocked() ? 'account_locked' : 'temporarily_limited' }, 429);
+    const credential = await state.getCredential();
     if (!credential) return json({ ok: false, error: 'credential_not_registered' }, 409);
     const options = await generateAuthenticationOptions({
       rpID: RP_ID,
@@ -143,16 +153,18 @@ async function handle(request) {
       timeout: 60_000,
       userVerification: 'required',
     });
-    state.issueChallenge('authentication', options.challenge);
+    if (!(await state.issueChallenge('authentication', options.challenge))) {
+      return json({ ok: false, error: 'too_many_pending_challenges' }, 503);
+    }
     return json({ ok: true, challenge: options.challenge, options });
   }
 
   if (url.pathname === '/api/webauthn/authenticate/verify') {
-    if (!state.canAuthenticate()) return json({ ok: false, error: state.isLocked() ? 'account_locked' : 'temporarily_limited' }, 429);
-    const credential = state.getCredential();
+    if (!(await state.canAuthenticate())) return json({ ok: false, error: await state.isLocked() ? 'account_locked' : 'temporarily_limited' }, 429);
+    const credential = await state.getCredential();
     if (!credential) return json({ ok: false, error: 'credential_not_registered' }, 409);
-    if (typeof body.challenge !== 'string' || !state.consumeChallenge('authentication', body.challenge)) {
-      state.recordAuthenticationFailure();
+    if (typeof body.challenge !== 'string' || !(await state.consumeChallenge('authentication', body.challenge))) {
+      await state.recordAuthenticationFailure();
       return json({ ok: false, error: 'authentication_rejected' }, 401);
     }
     try {
@@ -171,43 +183,46 @@ async function handle(request) {
         advancedFIDOConfig: { userVerification: 'required' },
       });
       if (!verification.verified || !verification.authenticationInfo.userVerified) {
-        state.recordAuthenticationFailure();
+        await state.recordAuthenticationFailure();
         console.log(JSON.stringify({ event: 'synthetic_passkey_authentication', outcome: 'rejected' }));
         return json({ ok: false, error: 'authentication_rejected' }, 401);
       }
-      credential.counter = verification.authenticationInfo.newCounter;
-      state.clearAuthenticationFailures();
+      const counterUpdated = await state.updateCredentialCounter(
+        credential.id,
+        credential.counter,
+        verification.authenticationInfo.newCounter,
+      );
+      if (!counterUpdated) {
+        await state.recordAuthenticationFailure();
+        return json({ ok: false, error: 'authentication_rejected' }, 401);
+      }
+      await state.clearAuthenticationFailures();
       const sessionToken = await state.issueSession();
       console.log(JSON.stringify({ event: 'synthetic_passkey_authentication', outcome: 'verified', user_verified: true }));
       return json({ ok: true, sessionToken, account: ACCOUNT_ID, expiresInMs: 15 * 60 * 1000 });
     } catch (error) {
-      state.recordAuthenticationFailure();
+      await state.recordAuthenticationFailure();
       console.log(JSON.stringify({ event: 'synthetic_passkey_authentication', outcome: 'rejected', error_type: error instanceof Error ? error.name : 'unknown' }));
       return json({ ok: false, error: 'authentication_rejected' }, 401);
     }
   }
 
   if (url.pathname === '/api/session/logout') {
-    state.revokeSession();
+    await state.revokeSession();
     return json({ ok: true });
   }
 
   if (url.pathname === '/api/synthetic-admin/lock') {
     if (body.adminCode !== ADMIN_DEMO_CODE) return json({ ok: false, error: 'admin_rejected' }, 403);
-    state.lockAccount();
+    await state.lockAccount();
     return json({ ok: true, locked: true });
   }
 
   return json({ ok: false, error: 'not_found' }, 404);
 }
 
+const localTestHandler = createWebAuthnHandler();
+
 export default {
-  async fetch(request) {
-    try {
-      return await handle(request);
-    } catch (error) {
-      console.log(JSON.stringify({ event: 'synthetic_passkey_request', outcome: 'error', error_type: error instanceof Error ? error.name : 'unknown' }));
-      return json({ ok: false, error: 'request_failed' }, 500);
-    }
-  },
+  fetch(request) { return localTestHandler(request); },
 };

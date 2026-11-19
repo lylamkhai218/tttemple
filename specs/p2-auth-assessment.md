@@ -14,7 +14,7 @@ Ngày đánh giá: 19/11/2026. Dữ liệu sử dụng trong POC phải là dữ
 - PBKDF2-HMAC-SHA-256 ở 600.000 vòng bị Web Crypto trong Workers từ chối với `NotSupportedError`; không phải phép đo thời gian hoàn tất.
 - Một mẫu scrypt `N=32768, r=8, p=3` trên Worker riêng thành công với CPU 250 ms và wall 251 ms. Đây là một trong các cấu hình scrypt OWASP liệt kê, nhưng CPU của nó cao gấp 25 lần mức 10 ms của Workers Free. Một mẫu không chứng minh độ ổn định hoặc quota.
 - OWASP khuyến nghị Argon2id; nếu không dùng được thì scrypt với cấu hình tối thiểu tương đương các bộ thông số nêu trong cheat sheet. Không hạ cấu hình để vừa giới hạn Free.
-- POC passkey/WebAuthn cục bộ nay có luồng thử đăng ký/đăng nhập với dữ liệu giả, challenge một lần, kiểm tra origin, giới hạn thử sai và session trong bộ nhớ. Năm test POC đạt; Vite build và Wrangler deploy dry-run đạt. Chưa dùng authenticator thật hoặc kiểm tra trên iOS.
+- POC passkey/WebAuthn cục bộ có luồng thử đăng ký/đăng nhập với dữ liệu giả, challenge một lần, kiểm tra origin, giới hạn thử sai và session. State adapter nay nhận storage transactional; config local riêng nối Worker tới một Durable Object SQLite theo tài khoản tổng hợp. Challenge, credential công khai, counter, giới hạn thử sai, khóa và hash phiên được lưu trong storage, không giữ ở biến module của Worker. Hai test trên storage fixture có transaction đạt cục bộ; fixture không thay thế Cloudflare runtime. Chưa chạy Wrangler DO vì package WebAuthn thiếu trong checkout sau npm registry `ECONNRESET`; CI mới được thêm dry-run bundle và đang chờ kết quả. Chưa dùng authenticator thật hoặc kiểm tra trên iOS.
 - Phép đo Cloudflare ngày 19/11 chỉ chạy benchmark chữ ký ECDSA tổng hợp trên Worker riêng, không phải WebAuthn đầu-cuối. Query telemetry lọc theo service không trả event; CPU time, wall time và số lần trigger chưa xác định. Cron đã xóa; API xác nhận Worker trở lại idle, không URL/route/binding, Observability vẫn bật.
 - Cloudflare Access hiện chưa được bật cho account: API GET danh sách Access applications ngày 19/11 trả `access.api.error.not_enabled`. Chưa bật Access hoặc cấu hình Zero Trust. Access có thể cung cấp identity email/groups qua `ctx.access`, nhưng cần danh tính email/IdP và mapping tới tài khoản/công ty đã duyệt.
 
@@ -24,7 +24,7 @@ Ngày đánh giá: 19/11/2026. Dữ liệu sử dụng trong POC phải là dữ
 |---|---|---|---|
 | Username + mật khẩu, tự băm bằng PBKDF2/scrypt | Giữ nguyên yêu cầu AP | Không đạt theo bằng chứng hiện tại | Chọn runtime/quota có CPU phù hợp, đo thêm, chấp nhận chi phí. Không giảm độ mạnh. |
 | Cloudflare Access hoặc IdP tổ chức | Cần đổi từ mật khẩu riêng sang email/SSO; vẫn map identity sang username/công ty | Có khả năng phù hợp vì danh tính được quản lý ngoài Worker | Zero Trust chưa bật; cần xác nhận IdP/email, onboarding và tác động tới đường chơi thử công khai theo IP VN. |
-| Passkey/WebAuthn | Username vẫn có thể là mã tài khoản; phải thay mật khẩu tạm/đổi mật khẩu bằng quy trình đăng ký và khôi phục passkey | Có khả năng phù hợp vì server xác minh chữ ký thay vì băm mật khẩu chậm | POC WebAuthn hiện mới chạy local với state trong bộ nhớ; cần xác minh challenge dùng một lần trong D1/DO, đăng ký có kiểm soát, khôi phục, thu hồi, phiên, iOS Safari, CPU thật và review bảo mật. |
+| Passkey/WebAuthn | Username vẫn có thể là mã tài khoản; phải thay mật khẩu tạm/đổi mật khẩu bằng quy trình đăng ký và khôi phục passkey | Có khả năng phù hợp vì server xác minh chữ ký thay vì băm mật khẩu chậm | Đã có config Durable Object SQLite local theo tài khoản tổng hợp; cần chạy Wrangler runtime, xác minh persistence/restart, enrollment an toàn, khôi phục/thu hồi, phiên, iOS Safari, CPU thật và review bảo mật. |
 
 ## Đề xuất CTO
 
@@ -35,7 +35,7 @@ Cloudflare Access/IdP là hướng thay thế tốt nếu người dùng có ema
 ## Cổng P2 còn lại
 
 1. Chốt một trong hai thay đổi luồng: passkey/WebAuthn hoặc Access/IdP. Nếu giữ nguyên username + mật khẩu tạm, cần quyết định về runtime/plan và chi phí trước khi đo tiếp.
-2. Với hướng được chọn, mở rộng POC chỉ bằng tài khoản giả: kiểm tra tạo/đăng nhập/khóa/thu hồi/thay phiên/challenge dùng lại/giới hạn thử và phục hồi; chuyển challenge/session khỏi bộ nhớ đơn tiến trình.
+2. Với hướng được chọn, tiếp tục POC chỉ bằng tài khoản giả: chạy Worker/DO local và kiểm tra tạo/đăng nhập/khóa/thu hồi/thay phiên/challenge dùng lại/giới hạn thử qua lúc DO được tái tạo. Sau đó mới kiểm tra authenticator thật theo user gesture; bổ sung phương án phục hồi và thu hồi passkey.
 3. Đo CPU, wall, lỗi runtime và quota bằng request HTTP hoặc trigger có telemetry truy xuất được trên Cloudflare; lần thử 19/11 không trả event nên không có số đo. Báo nhiều mẫu và cấu hình. Worker thử nghiệm phải được đưa về idle sau phép đo.
 4. P2 chỉ đạt khi có review bảo mật, bằng chứng thực thi Cloudflare và phương án vận hành/khôi phục. Khi chưa có, không tạo tài khoản thật hoặc nối vào P4/P5.
 
